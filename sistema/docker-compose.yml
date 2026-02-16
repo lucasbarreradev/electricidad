@@ -1,0 +1,30 @@
+services:
+  sistema: #nombre de la app establecido en application.properties
+    build: sistema #nombre de la carpeta donde está el DockerFile
+    mem_limit: 512m
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:mysql://electricidad:3306/electricidad?createDatabaseIfNotExist=true&serverTimezone=UTC
+      DB_USER_NAME: app
+      DB_PASSWORD: app123
+    restart: always
+    depends_on:
+      electricidad:
+        condition: service_healthy
+  electricidad: #configuraciones de base de datos dockerizada
+    image: mysql:8.0 #misma versión que esté en el pom
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_USER: app
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_PASSWORD: app123
+      MYSQL_DATABASE: electricidad
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+
+
