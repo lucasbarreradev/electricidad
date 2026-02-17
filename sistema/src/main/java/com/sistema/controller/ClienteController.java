@@ -8,6 +8,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/clientes")
 
@@ -107,6 +109,12 @@ public class ClienteController {
                 "Cliente eliminado correctamente");
 
         return "redirect:/clientes";
+    }
+
+    @GetMapping("/buscar")
+    @ResponseBody
+    public List<Cliente> buscar(@RequestParam String q) {
+        return clienteService.buscar(q);
     }
 
 }

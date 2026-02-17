@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -81,8 +82,7 @@ public class PresupuestoController {
             @RequestParam List<Integer> cantidades,
             @RequestParam(required = false) List<BigDecimal> descuentos,
             HttpServletResponse response
-    )
-    {
+    ) {
 
         try {
             Presupuesto presupuesto = presupuestoService.crear(
@@ -93,21 +93,23 @@ public class PresupuestoController {
                     descuentos
             );
 
+            response.reset(); // 🔴 CLAVE
             response.setContentType("application/pdf");
             response.setHeader(
                     "Content-Disposition",
-                    "inline; filename=presupuesto_" + presupuesto.getCodigo() + ".pdf"
+                    "attachment; filename=\"presupuesto_" + presupuesto.getCodigo() + ".pdf\""
             );
 
-            presupuestoPdfService.generarPdf(
-                    presupuesto,
-                    response.getOutputStream()
-            );
+            try (OutputStream out = response.getOutputStream()) {
+                presupuestoPdfService.generarPdf(presupuesto, out);
+                out.flush();
+            }
 
         } catch (Exception e) {
             throw new RuntimeException("Error al generar presupuesto", e);
         }
     }
+
 
 
 

@@ -1,6 +1,7 @@
 package com.sistema.service;
 
 import com.sistema.model.Cliente;
+import com.sistema.model.Producto;
 import com.sistema.repository.ClienteRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -50,5 +51,17 @@ public class ClienteService {
         }
         clienteRepo.deleteById(id);
     }
+
+    public List<Cliente> buscar(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return List.of();
+        }
+
+        return clienteRepo.buscar(query.trim())
+                .stream()
+                .limit(10)
+                .toList();
+    }
+
 }
 

@@ -2,9 +2,11 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ page import="java.util.List" %>
 <%@ page import="com.sistema.model.Producto" %>
+<%@ page import="com.sistema.model.Cliente" %>
 
 <%
 List<Producto> productos = (List<Producto>) request.getAttribute("productos");
+List<Cliente> clientes = (List<Cliente>) request.getAttribute("clientes");
 String error = (String) request.getAttribute("error");
 %>
 
@@ -105,25 +107,19 @@ String error = (String) request.getAttribute("error");
                            name="${_csrf.parameterName}"
                            value="${_csrf.token}"/>
 
-                   <label>Cliente</label>
+                   <div class="col-md-12 mb-3 position-relative">
+                       <label>Cliente</label>
+                       <input type="text"
+                              id="buscarCliente"
+                              class="form-control"
+                              placeholder="Escribí el nombre del cliente..."
+                              autocomplete="off">
+                       <input type="hidden" name="clienteId" id="clienteId">
 
-                   <select name="clienteId" class="form-control mb-3">
-
-                       <!-- Consumidor Final -->
-                       <option value=""
-                           ${venta.cliente == null ? "selected" : ""}>
-                           Consumidor Final
-                       </option>
-
-                       <!-- Lista de clientes -->
-                       <c:forEach items="${clientes}" var="c">
-                           <option value="${c.id}"
-                               ${venta.cliente != null && venta.cliente.id == c.id ? "selected" : ""}>
-                               ${c.nombre} ${c.apellido}
-                           </option>
-                       </c:forEach>
-
-                   </select>
+                       <div id="resultadosCliente"
+                            class="list-group position-absolute w-100"
+                            style="z-index:1050; max-height:200px; overflow-y:auto;"></div>
+                   </div>
 
 
                     <!-- FORMA DE PAGO -->
@@ -165,6 +161,7 @@ String error = (String) request.getAttribute("error");
 <script>
 let items = [];
 let productoSeleccionado = null;
+let clienteSeleccionado = null;
 let productoDescripcion = "";
 
 function agregarProducto() {
@@ -374,6 +371,56 @@ document.querySelector("select[name='formaPago']")
     .addEventListener("change", function () {
         actualizarPrecioSegunFormaPago();
     });
+
+
+document.getElementById("buscarCliente").addEventListener("keyup", function () {
+    let q = this.value;
+
+    if (q.length < 2) {
+        document.getElementById("resultadosCliente").innerHTML = "";
+        return;
+    }
+
+    fetch("${pageContext.request.contextPath}/clientes/buscar?q=" + encodeURIComponent(q))
+        .then(res => res.json())
+        .then(data => {
+            let html = "";
+
+            data.forEach(c => {
+                html +=
+                    "<a href='#' class='list-group-item list-group-item-action cliente-item' " +
+                    "data-id='" + c.id + "' " +
+                    "data-nombre='" + c.nombre + "' " +
+                    "data-apellido='" + c.apellido + "'>" +
+                    c.nombre + " " + c.apellido +
+                    "</a>";
+            });
+
+            document.getElementById("resultadosCliente").innerHTML = html;
+        });
+});
+
+// Event listener para clicks en los resultados
+document.getElementById("resultadosCliente").addEventListener("click", function (e) {
+    e.preventDefault();
+    let item = e.target.closest(".cliente-item");
+    if (!item) return;
+
+    seleccionarCliente(
+        item.dataset.id,
+        item.dataset.nombre,
+        item.dataset.apellido
+    );
+});
+
+function seleccionarCliente(id, nombre, apellido) {
+    clienteSeleccionado = id;
+
+    document.getElementById("clienteId").value = id;
+    document.getElementById("buscarCliente").value = nombre + " " + apellido;
+    document.getElementById("resultadosCliente").innerHTML = "";
+}
+
 
 
 renderTabla();
