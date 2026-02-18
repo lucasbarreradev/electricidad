@@ -99,56 +99,65 @@
                                         <td>${p.condicionIva}</td>
                                         <td>${p.direccion}</td>
                                         <td class="text-center">
-                                            <c:when test="${origen == 'producto'}">
 
-                                                <c:choose>
+                                            <c:choose>
 
-                                                    <c:when test="${not empty productoId}">
-                                                        <c:url var="urlSeleccionar"
-                                                               value="/productos/editar/${productoId}">
-                                                            <c:param name="proveedorId" value="${p.id}" />
-                                                        </c:url>
-                                                    </c:when>
+                                                <!-- SI VENGO DESDE PRODUCTO -->
+                                                <c:when test="${origen == 'producto'}">
 
-                                                    <c:otherwise>
-                                                        <c:url var="urlSeleccionar"
-                                                               value="/productos/nuevo">
-                                                            <c:param name="proveedorId" value="${p.id}" />
-                                                        </c:url>
-                                                    </c:otherwise>
+                                                    <c:choose>
 
-                                                </c:choose>
+                                                        <c:when test="${not empty productoId}">
+                                                            <c:url var="urlSeleccionar"
+                                                                   value="/productos/editar/${productoId}">
+                                                                <c:param name="proveedorId" value="${p.id}" />
+                                                            </c:url>
+                                                        </c:when>
 
-                                                <a class="btn btn-sm btn-success"
-                                                   href="${urlSeleccionar}">
-                                                    Seleccionar
-                                                </a>
+                                                        <c:otherwise>
+                                                            <c:url var="urlSeleccionar"
+                                                                   value="/productos/nuevo">
+                                                                <c:param name="proveedorId" value="${p.id}" />
+                                                            </c:url>
+                                                        </c:otherwise>
 
-                                            </c:when>
+                                                    </c:choose>
 
+                                                    <a class="btn btn-sm btn-success"
+                                                       href="${urlSeleccionar}">
+                                                        Seleccionar
+                                                    </a>
 
+                                                </c:when>
 
-                                            <c:otherwise>
-                                            <a class="btn btn-sm btn-warning"
-                                               href="${pageContext.request.contextPath}/proveedores/editar/${p.id}">
-                                                Editar
-                                            </a>
-                                            <form method="post"
-                                                                                              action="${pageContext.request.contextPath}/proveedores/eliminar/${p.id}"
-                                                                                              style="display:inline;"
-                                                                                              onsubmit="return confirm('¿Eliminar proveedor?');">
+                                                <!-- SI ENTRO NORMAL A PROVEEDORES -->
+                                                <c:otherwise>
 
-                                                                                            <input type="hidden"
-                                                                                                   name="${_csrf.parameterName}"
-                                                                                                   value="${_csrf.token}" />
+                                                    <a class="btn btn-sm btn-warning"
+                                                       href="${pageContext.request.contextPath}/proveedores/editar/${p.id}">
+                                                        Editar
+                                                    </a>
 
-                                                                                            <button type="submit" class="btn btn-sm btn-danger">
-                                                                                                Eliminar
-                                                                                            </button>
-                                                                                        </form>
-                                            </c:otherwise>
+                                                    <form method="post"
+                                                          action="${pageContext.request.contextPath}/proveedores/eliminar/${p.id}"
+                                                          style="display:inline;"
+                                                          onsubmit="return confirm('¿Eliminar proveedor?');">
 
-                                             </c:choose>
+                                                        <input type="hidden"
+                                                               name="${_csrf.parameterName}"
+                                                               value="${_csrf.token}" />
+
+                                                        <button type="submit"
+                                                                class="btn btn-sm btn-danger">
+                                                            Eliminar
+                                                        </button>
+
+                                                    </form>
+
+                                                </c:otherwise>
+
+                                            </c:choose>
+
                                         </td>
                                     </tr>
                                 </c:forEach>
