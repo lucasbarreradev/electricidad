@@ -102,7 +102,6 @@
 
                                             <c:choose>
 
-                                                <!-- SI VENGO DESDE PRODUCTO -->
                                                 <c:when test="${origen == 'producto'}">
 
                                                     <c:choose>
@@ -130,7 +129,6 @@
 
                                                 </c:when>
 
-                                                <!-- SI ENTRO NORMAL A PROVEEDORES -->
                                                 <c:otherwise>
 
                                                     <a class="btn btn-sm btn-warning"
