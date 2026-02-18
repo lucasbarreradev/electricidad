@@ -15,6 +15,7 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/productos")
+@SessionAttributes("producto")
 public class ProductoController {
     private final ProductoService productoService;
     private final ProveedorService proveedorService;
@@ -43,23 +44,22 @@ public class ProductoController {
             @RequestParam(required = false) Long proveedorId,
             Model model) {
 
-        Producto producto = new Producto();
+        Producto producto = (Producto) model.getAttribute("producto");
 
-        if (proveedorId != null) {
-            Proveedor proveedor = proveedorService
-                    .getProveedorById(proveedorId)
-                    .orElse(null);
-
-            if (proveedor != null) {
-                producto.setProveedor(proveedor);
-            }
+        if (producto == null) {
+            producto = new Producto();
         }
 
+        if (proveedorId != null) {
+            proveedorService.getProveedorById(proveedorId)
+                    .ifPresent(producto::setProveedor);
+        }
 
         model.addAttribute("producto", producto);
         model.addAttribute("tiposIva", TipoIva.values());
         return "producto/form";
     }
+
 
     // ==========================================
     // GUARDAR producto (nuevo)
@@ -69,19 +69,21 @@ public class ProductoController {
                           @RequestParam(required = false) Long proveedorId,
                           SessionStatus status) {
 
+        producto.setId(null);
+
         if (proveedorId != null) {
             Proveedor proveedor = proveedorService
                     .getProveedorById(proveedorId)
                     .orElseThrow(() -> new RuntimeException("Proveedor no encontrado"));
-
             producto.setProveedor(proveedor);
         }
 
         productoService.saveProducto(producto);
-        status.setComplete();
 
+        status.setComplete(); // 🔥 limpia la sesión
         return "redirect:/productos";
     }
+
 
 
     // ==========================================
@@ -89,23 +91,28 @@ public class ProductoController {
     // ==========================================
     @GetMapping("/editar/{id}")
     public String editar(@PathVariable Long id,
+                         @RequestParam(required = false) Long proveedorId,
                          Model model,
                          RedirectAttributes ra) {
 
-        Producto producto = productoService
-                .getProductoById(id)
-                .orElse(null);
+        Producto producto = productoService.getProductoById(id).orElse(null);
 
         if (producto == null) {
-            ra.addFlashAttribute("error",
-                    "Producto no encontrado");
+            ra.addFlashAttribute("error", "Producto no encontrado");
             return "redirect:/productos";
+        }
+
+        if (proveedorId != null) {
+            proveedorService.getProveedorById(proveedorId)
+                    .ifPresent(producto::setProveedor);
         }
 
         model.addAttribute("producto", producto);
         model.addAttribute("tiposIva", TipoIva.values());
         return "producto/form";
     }
+
+
 
     // ==========================================
     // ACTUALIZAR productos
@@ -144,5 +151,12 @@ public class ProductoController {
     public List<Producto> buscar(@RequestParam String q) {
         return productoService.buscar(q);
     }
+
+    @GetMapping("/nuevo/limpio")
+    public String nuevoLimpio(SessionStatus status) {
+        status.setComplete();
+        return "redirect:/productos/nuevo";
+    }
+
 
 }

@@ -64,7 +64,7 @@
                                                                     <input type="hidden" name="proveedorId"
                                                                            value="${producto.proveedor.id}">
 
-                                                                    <a href="${pageContext.request.contextPath}/proveedores?origen=producto"
+                                                                    <a href="${pageContext.request.contextPath}/proveedores?origen=producto&productoId=${producto.id}"
                                                                        class="btn btn-primary ml-3">
                                                                         Buscar Proveedor
                                                                     </a>

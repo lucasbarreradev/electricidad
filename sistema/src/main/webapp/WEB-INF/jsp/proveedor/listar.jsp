@@ -103,10 +103,20 @@
                                              <%-- Vengo desde PRODUCTOS --%>
                                                     <c:when test="${origen == 'producto'}">
                                                         <a class="btn btn-sm btn-success"
-                                                           href="${pageContext.request.contextPath}/productos/nuevo?proveedorId=${p.id}">
+                                                           href="${pageContext.request.contextPath}
+                                                           <c:choose>
+                                                               <c:when test='${not empty productoId}'>
+                                                                   /productos/editar/${productoId}?proveedorId=${p.id}
+                                                               </c:when>
+                                                               <c:otherwise>
+                                                                   /productos/nuevo?proveedorId=${p.id}
+                                                               </c:otherwise>
+                                                           </c:choose>">
                                                             Seleccionar
                                                         </a>
                                                     </c:when>
+
+
                                             <c:otherwise>
                                             <a class="btn btn-sm btn-warning"
                                                href="${pageContext.request.contextPath}/proveedores/editar/${p.id}">

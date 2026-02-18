@@ -5,40 +5,58 @@ import com.sistema.repository.UsuarioRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 public class DataLoader {
 
     @Bean
-    CommandLineRunner initDatabase(UsuarioRepository usuarioRepo,
-                                   PasswordEncoder passwordEncoder) {
+    CommandLineRunner initDatabase(
+            UsuarioRepository usuarioRepo,
+            PasswordEncoder passwordEncoder,
+            Environment env) {
+
         return args -> {
-            // Crear admin por defecto si no existe
-            if (!usuarioRepo.existsByUsername("admin")) {
+
+            // =========================
+            // ADMIN
+            // =========================
+            String adminUser = env.getProperty("app.admin.user");
+            String adminPass = env.getProperty("app.admin.pass");
+
+            if (adminUser != null && adminPass != null &&
+                    !usuarioRepo.existsByUsername(adminUser)) {
+
                 Usuario admin = new Usuario(
-                        "admin",
-                        passwordEncoder.encode("admin123"),
+                        adminUser,
+                        passwordEncoder.encode(adminPass),
                         "Administrador",
                         "Sistema",
                         Usuario.Rol.ADMIN
                 );
                 usuarioRepo.save(admin);
-                System.out.println("✅ Usuario ADMIN creado: admin / admin123");
             }
 
-            // Crear empleado de ejemplo
-            if (!usuarioRepo.existsByUsername("empleado")) {
+            // =========================
+            // EMPLEADO
+            // =========================
+            String empUser = env.getProperty("app.empleado.user");
+            String empPass = env.getProperty("app.empleado.pass");
+
+            if (!usuarioRepo.existsByUsername(empUser)) {
+
                 Usuario empleado = new Usuario(
-                        "empleado",
-                        passwordEncoder.encode("emp123"),
-                        "Juan",
-                        "Pérez",
+                        empUser,
+                        passwordEncoder.encode(empPass),
+                        "Empleado",
+                        "Sistema",
                         Usuario.Rol.EMPLEADO
                 );
                 usuarioRepo.save(empleado);
-                System.out.println("✅ Usuario EMPLEADO creado: empleado / emp123");
             }
         };
     }
+
+
 }

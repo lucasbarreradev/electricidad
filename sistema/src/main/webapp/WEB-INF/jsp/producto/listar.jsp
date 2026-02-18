@@ -33,10 +33,11 @@
                 <div class="d-sm-flex align-items-center justify-content-between mb-4 mt-4">
                     <h1 class="h3 mb-0 text-gray-800">Productos</h1>
 
-                    <a href="${pageContext.request.contextPath}/productos/nuevo"
+                    <a href="${pageContext.request.contextPath}/productos/nuevo/limpio"
                        class="btn btn-primary">
                         + Nuevo Producto
                     </a>
+
                 </div>
 
                 <!-- Card -->

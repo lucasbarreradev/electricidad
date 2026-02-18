@@ -21,6 +21,10 @@ services:
       MYSQL_ROOT_PASSWORD: root123
       MYSQL_PASSWORD: app123
       MYSQL_DATABASE: electricidad
+      APP_ADMIN_USER: admin
+      APP_ADMIN_PASS: ${ADMIN_PASS}
+      APP_EMPLEADO_USER: empleado
+      APP_EMPLEADO_PASS: ${EMPLEADO_PASS}
     restart: always
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]

@@ -23,12 +23,14 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
         @GetMapping
         public String listar(
                 @RequestParam(required = false) String origen,
+                @RequestParam(required = false) Long productoId,
                 Model model) {
 
             model.addAttribute("proveedores",
                     proveedorService.getProveedores());
 
-            model.addAttribute("origen", origen); // 👈 clave
+            model.addAttribute("origen", origen);
+            model.addAttribute("productoId", productoId);
             return "proveedor/listar";
         }
 
