@@ -99,22 +99,33 @@
                                         <td>${p.condicionIva}</td>
                                         <td>${p.direccion}</td>
                                         <td class="text-center">
-                                            <c:choose>
-                                             <%-- Vengo desde PRODUCTOS --%>
-                                                    <c:when test="${origen == 'producto'}">
-                                                        <a class="btn btn-sm btn-success"
-                                                           href="${pageContext.request.contextPath}
-                                                           <c:choose>
-                                                               <c:when test='${not empty productoId}'>
-                                                                   /productos/editar/${productoId}?proveedorId=${p.id}
-                                                               </c:when>
-                                                               <c:otherwise>
-                                                                   /productos/nuevo?proveedorId=${p.id}
-                                                               </c:otherwise>
-                                                           </c:choose>">
-                                                            Seleccionar
-                                                        </a>
+                                            <c:when test="${origen == 'producto'}">
+
+                                                <c:choose>
+
+                                                    <c:when test="${not empty productoId}">
+                                                        <c:url var="urlSeleccionar"
+                                                               value="/productos/editar/${productoId}">
+                                                            <c:param name="proveedorId" value="${p.id}" />
+                                                        </c:url>
                                                     </c:when>
+
+                                                    <c:otherwise>
+                                                        <c:url var="urlSeleccionar"
+                                                               value="/productos/nuevo">
+                                                            <c:param name="proveedorId" value="${p.id}" />
+                                                        </c:url>
+                                                    </c:otherwise>
+
+                                                </c:choose>
+
+                                                <a class="btn btn-sm btn-success"
+                                                   href="${urlSeleccionar}">
+                                                    Seleccionar
+                                                </a>
+
+                                            </c:when>
+
 
 
                                             <c:otherwise>

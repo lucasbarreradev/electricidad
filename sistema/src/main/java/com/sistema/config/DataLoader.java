@@ -38,7 +38,7 @@ public class DataLoader {
                 usuarioRepo.save(admin);
             }
 
-   
+
             String empUser = env.getProperty("app.empleado.user");
             String empPass = env.getProperty("app.empleado.pass");
 
