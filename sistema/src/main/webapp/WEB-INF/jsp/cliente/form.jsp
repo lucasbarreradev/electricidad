@@ -112,7 +112,8 @@
 
                             <!-- Botones -->
                             <div class="mt-4">
-                                <button type="submit" class="btn btn-success">
+                                <button type="submit" class="btn btn-success"
+                                        onclick="this.disabled=true; this.form.submit();">
                                     Guardar
                                 </button>
 

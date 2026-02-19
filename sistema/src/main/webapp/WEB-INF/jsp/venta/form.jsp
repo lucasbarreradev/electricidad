@@ -147,7 +147,8 @@ String error = (String) request.getAttribute("error");
 
                     <div id="itemsHidden"></div>
 
-                    <button type="submit" class="btn btn-success w-100">
+                    <button type="submit" class="btn btn-success w-100"
+                            onclick="this.disabled=true; this.form.submit();">
                         💾 Guardar Venta
                     </button>
 

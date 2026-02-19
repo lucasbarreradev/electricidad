@@ -178,7 +178,8 @@ String error = (String) request.getAttribute("error");
                                     <!-- Inputs hidden para enviar los items -->
                                     <div id="itemsHidden"></div>
 
-                                    <button type="submit" class="btn btn-success w-100 mb-2">
+                                    <button type="submit" class="btn btn-success w-100 mb-2"
+                                            onclick="this.disabled=true; this.form.submit();">
                                         💾 Guardar Presupuesto
                                     </button>
 
