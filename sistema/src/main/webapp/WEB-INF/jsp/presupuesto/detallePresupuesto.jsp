@@ -60,11 +60,6 @@
                             <div class="row mb-3 pb-3 border-bottom">
 
                                 <div class="col-md-3">
-                                    <div class="text-muted">Código</div>
-                                    <div class="fw-bold">${presupuesto.codigo}</div>
-                                </div>
-
-                                <div class="col-md-3">
                                     <div class="text-muted">Fecha</div>
                                     <div class="small">${fechaPresupuestoFmt}</div>
                                 </div>
@@ -82,6 +77,18 @@
                                         </c:choose>
                                     </div>
                                 </div>
+
+                               <div class="col-md-3">
+                                                               <div class="text-muted">Forma de pago</div>
+                                                               <div class="small">
+                                                                   <c:choose>
+                                                                       <c:when test="${not empty presupuesto.formaPago}">
+                                                                           ${presupuesto.formaPago}
+                                                                       </c:when>
+                                                                       <c:otherwise>-</c:otherwise>
+                                                                   </c:choose>
+                                                               </div>
+                                                           </div>
 
                                 <div class="col-md-3">
                                     <span class="badge

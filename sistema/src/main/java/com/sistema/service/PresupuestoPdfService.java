@@ -34,6 +34,7 @@ public class PresupuestoPdfService {
             agregarHeader(document, p);
             agregarDatosCliente(document, p);
             agregarCajaInfo(document, p);
+            agregarFormaPago(document, p);
             agregarTablaItems(document, p);
             agregarTotales(document, p);
 
@@ -211,6 +212,37 @@ public class PresupuestoPdfService {
 
         cell4.addElement(p4);
         table.addCell(cell4);
+
+        document.add(table);
+    }
+
+    // ==========================================
+// FORMA DE PAGO
+// ==========================================
+    private void agregarFormaPago(Document document, Presupuesto p) throws Exception {
+
+        Font bold = FontFactory.getFont(FontFactory.HELVETICA, 10, Font.BOLD);
+        Font normal = FontFactory.getFont(FontFactory.HELVETICA, 10);
+
+        PdfPTable table = new PdfPTable(2);
+        table.setWidthPercentage(100);
+        table.setSpacingBefore(10);
+        table.setSpacingAfter(15);
+        table.setWidths(new int[]{25, 75});
+
+        PdfPCell label = new PdfPCell(new Phrase("Forma de pago:", bold));
+        label.setBorder(Rectangle.NO_BORDER);
+        label.setPadding(4);
+        table.addCell(label);
+
+        String formaPago = p.getFormaPago() != null
+                ? p.getFormaPago().toString()
+                : "No especificada";
+
+        PdfPCell value = new PdfPCell(new Phrase(formaPago, normal));
+        value.setBorder(Rectangle.NO_BORDER);
+        value.setPadding(4);
+        table.addCell(value);
 
         document.add(table);
     }

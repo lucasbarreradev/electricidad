@@ -93,7 +93,7 @@ public class PresupuestoController {
                     descuentos
             );
 
-            response.reset(); // 🔴 CLAVE
+            response.reset();
             response.setContentType("application/pdf");
             response.setHeader(
                     "Content-Disposition",

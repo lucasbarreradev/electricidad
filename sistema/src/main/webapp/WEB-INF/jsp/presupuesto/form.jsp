@@ -1,15 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ page import="java.util.List" %>
-<%@ page import="com.sistema.model.Producto" %>
-<%@ page import="com.sistema.model.Cliente" %>
-
-<%
-List<Producto> productos = (List<Producto>) request.getAttribute("productos");
-List<Cliente> clientes = (List<Cliente>) request.getAttribute("clientes");
-String error = (String) request.getAttribute("error");
-%>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -33,22 +23,24 @@ String error = (String) request.getAttribute("error");
                     <!-- COLUMNA IZQUIERDA: Productos -->
                     <div class="col-lg-9 col-md-8 col-sm-12">
                         <div class="card shadow mb-4">
-                            <div class="card-header bg-primary text-white">
-                                <h6 class="mb-0">📦 Detalles del Presupuesto</h6>
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                <span>📦 Detalles del Presupuesto</span>
+                                <small class="badge bg-light text-dark">Paso 2: Agregar productos</small>
                             </div>
                             <div class="card-body">
 
                                 <!-- BUSCADOR -->
                                 <div class="row mb-3">
                                     <div class="col-md-12">
-                                        <label class="form-label fw-semibold">Buscar producto</label>
+                                        <label class="form-label fw-semibold">🔍 Buscar producto</label>
                                         <input type="text"
                                                id="buscarProducto"
-                                               class="form-control"
-                                               placeholder="Escribí el nombre del producto...">
+                                               class="form-control form-control-lg"
+                                               placeholder="Escribí el nombre o código del producto..."
+                                               autocomplete="off">
                                         <div id="resultados"
                                              class="list-group position-absolute w-100"
-                                             style="z-index:1000; max-height: 300px; overflow-y: auto;"></div>
+                                             style="z-index:1000; max-height: 400px; overflow-y: auto;"></div>
                                     </div>
                                 </div>
 
@@ -64,7 +56,8 @@ String error = (String) request.getAttribute("error");
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label">Precio unitario</label>
-                                        <input type="number" id="precio" class="form-control" step="0.01" readonly>
+                                        <input type="text" id="precio" class="form-control" readonly>
+                                        <small class="text-muted" id="textoPrecio"></small>
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label">Descuento (%)</label>
@@ -77,8 +70,7 @@ String error = (String) request.getAttribute("error");
                                                step="0.01">
                                     </div>
                                     <div class="col-md-2 d-flex align-items-end">
-                                        <button class="btn btn-success w-100"
-                                                onclick="agregarProducto()">
+                                        <button class="btn btn-success w-100" onclick="agregarProducto()">
                                             + Agregar
                                         </button>
                                     </div>
@@ -106,9 +98,9 @@ String error = (String) request.getAttribute("error");
                                         </tbody>
                                         <tfoot class="table-secondary">
                                         <tr>
-                                            <td colspan="4" class="fw-bold text-end">TOTAL:</td>
-                                            <td class="text-end fw-bold fs-5 text-success">
-                                                $<span id="totalDisplay">0.00</span>
+                                            <td colspan="4" class="fw-bold text-end">SUBTOTAL (Efectivo):</td>
+                                            <td class="text-end fw-bold fs-5 text-dark">
+                                                $<span id="subtotalEfectivo">0.00</span>
                                             </td>
                                             <td></td>
                                         </tr>
@@ -122,69 +114,100 @@ String error = (String) request.getAttribute("error");
 
                     <!-- COLUMNA DERECHA: Datos generales -->
                     <div class="col-lg-3 col-md-4 col-sm-12">
-                        <div class="card shadow mb-4 sticky-top" style="top: 20px;">
+                        <div class="card shadow mb-4">
                             <div class="card-header bg-success text-white">
-                                <h6 class="mb-0">📝 Datos Generales</h6>
+                                <h6 class="mb-0">📝 Datos del Presupuesto</h6>
                             </div>
                             <div class="card-body">
 
-                                <form id="formPresupuesto" method="post"
+                                <form id="formPresupuesto"
+                                      method="post"
                                       action="${pageContext.request.contextPath}/presupuestos/guardar"
-                                      target="_blank">
+                                      onsubmit="return validarPresupuesto()">
 
-                                      <input type="hidden"
-                                                 name="${_csrf.parameterName}"
-                                                 value="${_csrf.token}"/>
+                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-                                    <div class="col-md-12 mb-3 position-relative">
-                                                           <label>Cliente</label>
-                                                           <input type="text"
-                                                                  id="buscarCliente"
-                                                                  class="form-control"
-                                                                  placeholder="Escribí el nombre del cliente..."
-                                                                  autocomplete="off">
-                                                           <input type="hidden" name="clienteId" id="clienteId">
+                                    <!-- PASO 1: CLIENTE -->
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">
+                                            <small class="badge bg-secondary">Paso 1</small>
+                                            Cliente (opcional)
+                                        </label>
+                                        <input type="text"
+                                               id="buscarCliente"
+                                               class="form-control"
+                                               placeholder="Buscar cliente..."
+                                               autocomplete="off">
+                                        <input type="hidden" name="clienteId" id="clienteId">
 
-                                                           <div id="resultadosCliente"
-                                                                class="list-group position-absolute w-100"
-                                                                style="z-index:1050; max-height:200px; overflow-y:auto;"></div>
-                                                       </div>
-
-                                    <!-- FORMA DE PAGO -->
-                                                        <label>Forma de pago</label>
-                                                        <select name="formaPago" class="form-control mb-3">
-                                                            <option value="CONTADO">Contado</option>
-                                                            <option value="TARJETA">Tarjeta</option>
-                                                            <option value="CUENTA_CORRIENTE">Cuenta Corriente</option>
-                                                        </select>
+                                        <div id="resultadosCliente"
+                                             class="list-group position-absolute w-100"
+                                             style="z-index:1050; max-height:200px; overflow-y:auto;"></div>
+                                        <small class="text-muted">Dejá vacío para "Consumidor Final"</small>
+                                    </div>
 
                                     <hr>
 
-                                    <!-- Resumen -->
+                                    <!-- RESUMEN DE PRODUCTOS -->
                                     <div class="mb-3">
-                                        <small class="text-muted">Productos:</small>
+                                        <small class="text-muted">Productos agregados:</small>
                                         <div class="fs-5 fw-bold text-primary">
                                             <span id="cantidadItems">0</span> items
                                         </div>
                                     </div>
 
-                                    <div class="mb-4">
-                                        <small class="text-muted">TOTAL A PRESUPUESTAR:</small>
-                                        <div class="fs-3 fw-bold text-success">
-                                            $<span id="totalGeneral">0.00</span>
+                                    <!-- SUBTOTAL PRELIMINAR -->
+                                    <div class="mb-3">
+                                        <small class="text-muted">Subtotal (efectivo):</small>
+                                        <div class="fs-4 fw-bold text-dark">
+                                            $<span id="subtotalGeneral">0.00</span>
                                         </div>
+                                    </div>
+
+                                    <hr>
+
+                                    <!-- PASO 3: FORMA DE PAGO -->
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">
+                                            <small class="badge bg-warning text-dark">Paso 3</small>
+                                            💳 Forma de pago *
+                                        </label>
+                                        <select name="formaPago"
+                                                id="formaPago"
+                                                class="form-select form-select-lg"
+                                                required
+                                                onchange="actualizarPreciosFinal()">
+                                            <option value="">-- Seleccionar método de pago --</option>
+                                            <option value="CONTADO">💵 Efectivo </option>
+                                            <option value="TARJETA">💳 Tarjeta </option>
+                                            <option value="CUENTA_CORRIENTE">📋 Cuenta Corriente </option>
+                                        </select>
+                                    </div>
+
+                                    <!-- TOTAL FINAL -->
+                                    <div class="mb-4 p-3 bg-light rounded">
+                                        <small class="text-muted">TOTAL A PRESUPUESTAR:</small>
+                                        <div class="fs-2 fw-bold text-success">
+                                            $<span id="totalFinal">0.00</span>
+                                        </div>
+                                        <small class="text-muted" id="detalleRecargo"></small>
                                     </div>
 
                                     <!-- Inputs hidden para enviar los items -->
                                     <div id="itemsHidden"></div>
 
-                                    <button type="submit" class="btn btn-success w-100 mb-2"
-                                            onclick="this.disabled=true; this.form.submit();">
+                                    <button type="submit"
+                                            class="btn btn-success btn-lg w-100 mb-2"
+                                            id="btnGuardar"
+                                            disabled>
                                         💾 Guardar Presupuesto
                                     </button>
+                                    <small class="text-muted d-block text-center mt-2" id="mensajeAyuda">
+                                        ⬆️ Agregá productos primero
+                                    </small>
 
                                     <a href="${pageContext.request.contextPath}/presupuestos"
-                                       class="btn btn-outline-secondary w-100">
+                                       class="btn btn-outline-secondary w-100 mt-2">
                                         Cancelar
                                     </a>
 
@@ -201,55 +224,65 @@ String error = (String) request.getAttribute("error");
 </div>
 
 <script>
-console.log('Script cargado');
-
 let items = [];
 let productoSeleccionado = null;
 let clienteSeleccionado = null;
 let productoDescripcion = "";
+let precioContado = 0;
+let precioTarjeta = 0;
+let precioCC = 0;
 
 // ==========================================
 // AGREGAR PRODUCTO A LA LISTA
 // ==========================================
 function agregarProducto() {
     if (!productoSeleccionado) {
-        alert("Seleccioná un producto primero");
+        alert("⚠️ Seleccioná un producto primero");
         return;
     }
 
     let cantidad = parseInt(document.getElementById("cantidad").value);
-    let precio = parseFloat(document.getElementById("precio").value);
-    let descuentoPct = parseFloat(document.getElementById("descuento").value || 0);
     let stock = parseInt(document.getElementById("stock").value);
+    let descuentoPct = parseFloat(document.getElementById("descuento").value || 0);
 
     // Validaciones
     if (!cantidad || cantidad <= 0) {
-        alert("La cantidad debe ser mayor a 0");
+        alert("⚠️ La cantidad debe ser mayor a 0");
         return;
     }
 
     if (cantidad > stock) {
-        if (!confirm('La cantidad solicitada (' + cantidad + ') supera el stock disponible (' + stock + '). ¿Continuar igual?')) {
+        if (!confirm(`⚠️ La cantidad solicitada (${cantidad}) supera el stock disponible (${stock}). ¿Continuar igual?`)) {
             return;
         }
     }
 
-    // Calcular subtotal
-    let subtotalBruto = cantidad * precio;
-    let descuentoMonto = subtotalBruto * (descuentoPct / 100);
-    let subtotal = subtotalBruto - descuentoMonto;
+    // Buscar si el producto ya existe
+    let itemExistente = items.find(i => i.productoId === productoSeleccionado);
 
-    // Agregar a la lista
-    items.push({
-        productoId: productoSeleccionado,
-        descripcion: productoDescripcion,
-        cantidad: cantidad,
-        precio: precio,
-        descuento: descuentoPct,
-        subtotal: subtotal
-    });
+    if (itemExistente) {
+        // Actualizar cantidad del producto existente
+        itemExistente.cantidad += cantidad;
+    } else {
+        // Agregar nuevo producto
+        items.push({
+            productoId: productoSeleccionado,
+            descripcion: productoDescripcion,
+            cantidad: cantidad,
+            precioContado: precioContado,
+            precioTarjeta: precioTarjeta,
+            precioCC: precioCC,
+            descuento: descuentoPct
+        });
+    }
 
     // Limpiar campos
+    limpiarSeleccion();
+    renderTabla();
+    actualizarPreciosFinal();
+}
+
+function limpiarSeleccion() {
     productoSeleccionado = null;
     productoDescripcion = "";
     document.getElementById("buscarProducto").value = "";
@@ -257,17 +290,16 @@ function agregarProducto() {
     document.getElementById("precio").value = "";
     document.getElementById("cantidad").value = "1";
     document.getElementById("descuento").value = "0";
-
-    renderTabla();
+    document.getElementById("textoPrecio").textContent = "";
+    document.getElementById("buscarProducto").focus();
 }
 
 // ==========================================
-// RENDERIZAR TABLA Y TOTALES
+// RENDERIZAR TABLA
 // ==========================================
 function renderTabla() {
     let tbody = document.getElementById("detallePresupuesto");
     let hidden = document.getElementById("itemsHidden");
-    let total = 0;
 
     tbody.innerHTML = "";
     hidden.innerHTML = "";
@@ -276,66 +308,153 @@ function renderTabla() {
         tbody.innerHTML =
             "<tr>" +
                 "<td colspan='6' class='text-center text-muted py-4'>" +
-                    "No hay productos agregados. Buscá y agregá productos arriba." +
+                    "No hay productos agregados.<br>Buscá y agregá productos arriba." +
                 "</td>" +
             "</tr>";
-        return;
+
+        document.getElementById("btnGuardar").disabled = true;
+        document.getElementById("mensajeAyuda").textContent = "⬆️ Agregá productos primero";
+
+    } else {
+        items.forEach((item, index) => {
+            // Usar precio en efectivo para mostrar en tabla
+            let precio = item.precioContado;
+            let subtotal = item.cantidad * precio * (1 - item.descuento / 100);
+
+            tbody.innerHTML +=
+                "<tr>" +
+                    "<td><strong>" + item.descripcion + "</strong></td>" +
+                    "<td class='text-center'>" + item.cantidad + "</td>" +
+                    "<td class='text-end'>$" + precio.toFixed(2) + "</td>" +
+                    "<td class='text-center'>" +
+                        (item.descuento > 0 ? item.descuento + "%" : "-") +
+                    "</td>" +
+                    "<td class='text-end fw-semibold'>$" + subtotal.toFixed(2) + "</td>" +
+                    "<td class='text-center'>" +
+                        "<button type='button' class='btn btn-danger btn-sm' onclick='eliminarItem(" + index + ")'>✕</button>" +
+                    "</td>" +
+                "</tr>";
+
+            // Inputs hidden (guardar IDs para el backend)
+            hidden.innerHTML +=
+                "<input type='hidden' name='productoIds' value='" + item.productoId + "'>" +
+                "<input type='hidden' name='cantidades' value='" + item.cantidad + "'>" +
+                "<input type='hidden' name='descuentos' value='" + item.descuento + "'>";
+        });
+
+        verificarHabilitarBoton();
     }
 
-    items.forEach((i, index) => {
-        total += i.subtotal;
-
-        tbody.innerHTML +=
-            "<tr>" +
-                "<td>" + i.descripcion + "</td>" +
-                "<td class='text-center'>" + i.cantidad + "</td>" +
-                "<td class='text-end'>$" + i.precio + "</td>" +
-                "<td class='text-center'>" +
-                    (i.descuento > 0 ? i.descuento + "%" : "-") +
-                "</td>" +
-                "<td class='text-end fw-semibold'>$" + i.subtotal + "</td>" +
-                "<td class='text-center'>" +
-                    "<button type='button' class='btn btn-danger btn-sm' " +
-                            "onclick='eliminarItem(" + index + ")'>✕</button>" +
-                "</td>" +
-            "</tr>";
-
-        hidden.innerHTML +=
-            "<input type='hidden' name='productoIds' value='" + i.productoId + "'>" +
-            "<input type='hidden' name='cantidades' value='" + i.cantidad + "'>" +
-            "<input type='hidden' name='descuentos' value='" + i.descuento + "'>";
-    });
-
-    document.getElementById("totalDisplay").textContent = total;
-    document.getElementById("totalGeneral").textContent = total;
     document.getElementById("cantidadItems").textContent = items.length;
 }
 
+// ==========================================
+// ACTUALIZAR PRECIOS SEGÚN FORMA DE PAGO
+// ==========================================
+function actualizarPreciosFinal() {
+    const formaPago = document.getElementById("formaPago").value;
+    let totalEfectivo = 0;
+    let totalFinal = 0;
 
-// ==========================================
-// ELIMINAR ITEM
-// ==========================================
-function eliminarItem(index) {
-    items.splice(index, 1);
-    renderTabla();
+    items.forEach(item => {
+        let precio = item.precioContado; // Base
+
+        // Seleccionar precio según forma de pago
+        if (formaPago === "TARJETA") {
+            precio = item.precioTarjeta;
+        } else if (formaPago === "CUENTA_CORRIENTE") {
+            precio = item.precioCC;
+        }
+
+        let subtotal = item.cantidad * precio * (1 - item.descuento / 100);
+        totalFinal += subtotal;
+
+        // Calcular también el total en efectivo
+        let subtotalEfectivo = item.cantidad * item.precioContado * (1 - item.descuento / 100);
+        totalEfectivo += subtotalEfectivo;
+    });
+
+    document.getElementById("subtotalEfectivo").textContent = totalEfectivo.toFixed(2);
+    document.getElementById("subtotalGeneral").textContent = totalEfectivo.toFixed(2);
+    document.getElementById("totalFinal").textContent = totalFinal.toFixed(2);
+
+    // Mostrar detalle de recargo
+    let detalleRecargo = "";
+    if (formaPago === "TARJETA") {
+        let recargo = totalFinal - totalEfectivo;
+        detalleRecargo = "Precio con tarjeta";
+    } else if (formaPago === "CUENTA_CORRIENTE") {
+        let recargo = totalFinal - totalEfectivo;
+        detalleRecargo = "Precio con cuenta corriente";
+    } else if (formaPago === "CONTADO") {
+        detalleRecargo = "Precio en efectivo";
+    }
+
+    document.getElementById("detalleRecargo").textContent = detalleRecargo;
+
+    verificarHabilitarBoton();
 }
 
-let precioContado = 0;
-let precioTarjeta = 0;
-let precioCC = 0;
+// ==========================================
+// VERIFICAR SI SE PUEDE GUARDAR
+// ==========================================
+function verificarHabilitarBoton() {
+    const hayProductos = items.length > 0;
+    const hayFormaPago = document.getElementById("formaPago").value !== "";
+
+    if (hayProductos && hayFormaPago) {
+        document.getElementById("btnGuardar").disabled = false;
+        document.getElementById("mensajeAyuda").textContent = "✅ Todo listo para guardar";
+        document.getElementById("mensajeAyuda").className = "text-success d-block text-center mt-2 fw-bold";
+    } else if (hayProductos && !hayFormaPago) {
+        document.getElementById("btnGuardar").disabled = true;
+        document.getElementById("mensajeAyuda").textContent = "💳 Seleccioná la forma de pago";
+        document.getElementById("mensajeAyuda").className = "text-warning d-block text-center mt-2";
+    } else {
+        document.getElementById("btnGuardar").disabled = true;
+        document.getElementById("mensajeAyuda").textContent = "⬆️ Agregá productos primero";
+        document.getElementById("mensajeAyuda").className = "text-muted d-block text-center mt-2";
+    }
+}
+
+function eliminarItem(index) {
+    if (confirm("¿Eliminar este producto?")) {
+        items.splice(index, 1);
+        renderTabla();
+        actualizarPreciosFinal();
+    }
+}
+
+function validarPresupuesto() {
+    if (items.length === 0) {
+        alert("⚠️ Agregá al menos un producto");
+        return false;
+    }
+
+    if (!document.getElementById("formaPago").value) {
+        alert("⚠️ Seleccioná la forma de pago");
+        return false;
+    }
+
+    // Deshabilitar botón para evitar doble click
+    document.getElementById("btnGuardar").disabled = true;
+    document.getElementById("btnGuardar").textContent = "Guardando...";
+
+    return true;
+}
 
 // ==========================================
 // BÚSQUEDA DE PRODUCTOS
 // ==========================================
 document.getElementById("buscarProducto").addEventListener("keyup", function() {
-    let query = this.value.trim();
+    let q = this.value;
 
-    if (query.length < 2) {
+    if (q.length < 2) {
         document.getElementById("resultados").innerHTML = "";
         return;
     }
 
-    fetch("${pageContext.request.contextPath}/productos/buscar?q=" + encodeURIComponent(query))
+    fetch("${pageContext.request.contextPath}/productos/buscar?q=" + encodeURIComponent(q))
         .then(res => res.json())
         .then(data => {
             let html = "";
@@ -344,25 +463,24 @@ document.getElementById("buscarProducto").addEventListener("keyup", function() {
                 html = '<div class="list-group-item text-muted">No se encontraron productos</div>';
             } else {
                 data.forEach(p => {
-                    let stock = p.cantidad ?? 0;
-                    let precioContado = p.precioContado ?? 0;
-                    let precioTarjeta = p.precioTarjeta ?? 0;
-                    let precioCC = p.precioCuentaCorriente ?? 0;
+                    let stock = p.cantidad || 0;
+                    let badgeClass = stock <= 5 ? 'bg-danger' : stock <= 20 ? 'bg-warning text-dark' : 'bg-success';
 
                     html +=
                         "<a href='#' class='list-group-item list-group-item-action producto-item' " +
                         "data-id='" + p.id + "' " +
-                        "data-descripcion='" + p.descripcion + "' " +
+                        "data-descripcion='" + (p.descripcion || '') + "' " +
                         "data-stock='" + stock + "' " +
-                        "data-precio-contado='" + p.precioContado + "' " +
-                        "data-precio-tarjeta='" + p.precioTarjeta + "' " +
-                        "data-precio-cc='" + p.precioCuentaCorriente + "'>" +
-                        p.descripcion + " | Stock: " + stock +
+                        "data-precio-contado='" + (p.precioContado || 0) + "' " +
+                        "data-precio-tarjeta='" + (p.precioTarjeta || 0) + "' " +
+                        "data-precio-cc='" + (p.precioCuentaCorriente || 0) + "'>" +
+                        "<strong>" + (p.descripcion || 'Sin nombre') + "</strong>" +
+                        "<br><small class='text-muted'>" +
+                            "Efectivo: $" + (p.precioContado || 0) + " | " +
+                            "Stock: <span class='badge " + badgeClass + "'>" + stock + "</span>" +
+                        "</small>" +
                         "</a>";
-
                 });
-
-
             }
 
             document.getElementById("resultados").innerHTML = html;
@@ -372,9 +490,6 @@ document.getElementById("buscarProducto").addEventListener("keyup", function() {
         });
 });
 
-// ==========================================
-// SELECCIONAR PRODUCTO DEL DROPDOWN
-// ==========================================
 document.getElementById("resultados").addEventListener("click", function(e) {
     e.preventDefault();
     let item = e.target.closest(".producto-item");
@@ -393,112 +508,84 @@ document.getElementById("resultados").addEventListener("click", function(e) {
 function seleccionarProducto(id, descripcion, stock, pContado, pTarjeta, pCC) {
     productoSeleccionado = Number(id);
     productoDescripcion = descripcion;
-
     precioContado = parseFloat(pContado);
-        precioTarjeta = parseFloat(pTarjeta);
-        precioCC = parseFloat(pCC);
+    precioTarjeta = parseFloat(pTarjeta);
+    precioCC = parseFloat(pCC);
 
     document.getElementById("buscarProducto").value = descripcion;
     document.getElementById("stock").value = Number(stock);
     document.getElementById("cantidad").value = "1";
-
-    actualizarPrecioSegunFormaPago();
+    document.getElementById("precio").value = pContado;
+    document.getElementById("textoPrecio").textContent =
+        `Tarjeta: $${pTarjeta} | C/C: $${pCC}`;
 
     document.getElementById("resultados").innerHTML = "";
-
-    // Fokusear cantidad para agilizar
     document.getElementById("cantidad").focus();
 }
 
 // ==========================================
-// VALIDACIÓN ANTES DE ENVIAR
+// BÚSQUEDA DE CLIENTES
 // ==========================================
-document.getElementById("formPresupuesto").addEventListener("submit", function(e) {
-    if (items.length === 0) {
-        e.preventDefault();
-        alert("Debe agregar al menos un producto al presupuesto");
-        return false;
+document.getElementById("buscarCliente").addEventListener("keyup", function() {
+    let q = this.value;
+
+    if (q.length < 2) {
+        document.getElementById("resultadosCliente").innerHTML = "";
+        return;
     }
 
-    console.log('Enviando presupuesto con', items.length, 'items');
-    return true;
+    fetch("${pageContext.request.contextPath}/clientes/buscar?q=" + encodeURIComponent(q))
+        .then(res => res.json())
+        .then(data => {
+            let html = "";
+
+            data.forEach(c => {
+                html +=
+                    "<a href='#' class='list-group-item list-group-item-action cliente-item' " +
+                    "data-id='" + c.id + "' " +
+                    "data-nombre='" + (c.nombre || '') + "' " +
+                    "data-apellido='" + (c.apellido || '') + "'>" +
+                    (c.nombre || '') + " " + (c.apellido || '') +
+                    "</a>";
+            });
+
+            document.getElementById("resultadosCliente").innerHTML = html;
+        });
 });
+
+document.getElementById("resultadosCliente").addEventListener("click", function(e) {
+    e.preventDefault();
+    let item = e.target.closest(".cliente-item");
+    if (!item) return;
+
+    seleccionarCliente(
+        item.dataset.id,
+        item.dataset.nombre,
+        item.dataset.apellido
+    );
+});
+
+function seleccionarCliente(id, nombre, apellido) {
+    clienteSeleccionado = id;
+    document.getElementById("clienteId").value = id;
+    document.getElementById("buscarCliente").value = nombre + " " + apellido;
+    document.getElementById("resultadosCliente").innerHTML = "";
+}
+
+// ==========================================
+// ESCUCHAR CAMBIO DE FORMA DE PAGO
+// ==========================================
+document.getElementById("formaPago").addEventListener("change", actualizarPreciosFinal);
 
 // Cerrar resultados al hacer clic fuera
 document.addEventListener('click', function(e) {
     if (!e.target.closest('#buscarProducto') && !e.target.closest('#resultados')) {
         document.getElementById('resultados').innerHTML = '';
     }
+    if (!e.target.closest('#buscarCliente') && !e.target.closest('#resultadosCliente')) {
+        document.getElementById('resultadosCliente').innerHTML = '';
+    }
 });
-
-function actualizarPrecioSegunFormaPago() {
-
-    let formaPago = document.querySelector("select[name='formaPago']").value;
-    let precio = 0;
-
-    if (formaPago === "CONTADO") {
-        precio = precioContado;
-    } else if (formaPago === "TARJETA") {
-        precio = precioTarjeta;
-    } else if (formaPago === "CUENTA_CORRIENTE") {
-        precio = precioCC;
-    }
-
-    document.getElementById("precio").value = precio.toFixed(2);
-}
-document.querySelector("select[name='formaPago']")
-    .addEventListener("change", function () {
-        actualizarPrecioSegunFormaPago();
-    });
-
-    document.getElementById("buscarCliente").addEventListener("keyup", function () {
-        let q = this.value;
-
-        if (q.length < 2) {
-            document.getElementById("resultadosCliente").innerHTML = "";
-            return;
-        }
-
-        fetch("${pageContext.request.contextPath}/clientes/buscar?q=" + encodeURIComponent(q))
-            .then(res => res.json())
-            .then(data => {
-                let html = "";
-
-                data.forEach(c => {
-                    html +=
-                        "<a href='#' class='list-group-item list-group-item-action cliente-item' " +
-                        "data-id='" + c.id + "' " +
-                        "data-nombre='" + c.nombre + "' " +
-                        "data-apellido='" + c.apellido + "'>" +
-                        c.nombre + " " + c.apellido +
-                        "</a>";
-                });
-
-                document.getElementById("resultadosCliente").innerHTML = html;
-            });
-    });
-
-    // Event listener para clicks en los resultados
-    document.getElementById("resultadosCliente").addEventListener("click", function (e) {
-        e.preventDefault();
-        let item = e.target.closest(".cliente-item");
-        if (!item) return;
-
-        seleccionarCliente(
-            item.dataset.id,
-            item.dataset.nombre,
-            item.dataset.apellido
-        );
-    });
-
-    function seleccionarCliente(id, nombre, apellido) {
-        clienteSeleccionado = id;
-
-        document.getElementById("clienteId").value = id;
-        document.getElementById("buscarCliente").value = nombre + " " + apellido;
-        document.getElementById("resultadosCliente").innerHTML = "";
-    }
-
 </script>
 
 <style>
@@ -519,24 +606,18 @@ document.querySelector("select[name='formaPago']")
 }
 
 /* Resultados búsqueda */
-#resultados {
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+#resultados, #resultadosCliente {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    border-radius: 4px;
 }
 
-.producto-item {
+.producto-item, .cliente-item {
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
-.producto-item:hover {
-    background-color: #f8f9fa !important;
-}
-
-/* Sticky sidebar en desktop */
-@media (min-width: 992px) {
-    .sticky-top {
-        position: sticky !important;
-    }
+.producto-item:hover, .cliente-item:hover {
+    background-color: #f0f9ff !important;
 }
 </style>
 
