@@ -99,7 +99,11 @@ public class VentaService {
             // Snapshot del precio actual
             item.setPrecioUnitario(precio);
 
-            item.setCostoUnitario(producto.getPrecioCompra());
+            item.setCostoUnitario(
+                    producto.getPrecioCompra() != null
+                            ? producto.getPrecioCompra()
+                            : BigDecimal.ZERO
+            );
 
             item.setAlicuotaIva(producto.getTipoIva().getPorcentaje());
 
@@ -194,7 +198,11 @@ public class VentaService {
             item.setProducto(producto);
             item.setCantidad(dp.getCantidad());
 
-            item.setCostoUnitario(producto.getPrecioCompra());
+            item.setCostoUnitario(
+                    producto.getPrecioCompra() != null
+                            ? producto.getPrecioCompra()
+                            : BigDecimal.ZERO
+            );
             item.setDescuentoPct(dp.getDescuentoPct());
             item.setAlicuotaIva(producto.getTipoIva().getPorcentaje());
 

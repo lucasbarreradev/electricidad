@@ -36,7 +36,7 @@ public class VentaItem {
     @Column(name = "cantidad", nullable = false)
     private Integer cantidad;
 
-    @Column(name = "costo_unitario", nullable = false)
+    @Column(name = "costo_unitario")
     private BigDecimal costoUnitario;
 
     @Column(name = "descuento_pct")
@@ -103,9 +103,9 @@ public class VentaItem {
 
     public BigDecimal getGanancia() {
 
-        BigDecimal ingreso = subtotal; // ya tiene descuento aplicado
+        BigDecimal ingreso = subtotal;
 
-        BigDecimal costo = costoUnitario
+        BigDecimal costo = (costoUnitario != null ? costoUnitario : BigDecimal.ZERO)
                 .multiply(BigDecimal.valueOf(cantidad));
 
         return ingreso.subtract(costo);
