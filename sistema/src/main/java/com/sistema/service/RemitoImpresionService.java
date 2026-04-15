@@ -1,303 +1,371 @@
 package com.sistema.service;
 
 import com.lowagie.text.*;
-import com.lowagie.text.Font;
-import com.lowagie.text.Image;
-import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.*;
-import com.sistema.model.Remito;
-import com.sistema.model.RemitoItem;
+import com.sistema.model.*;
 import org.springframework.stereotype.Service;
 
-import java.awt.*;
+import java.awt.Color;
 import java.io.OutputStream;
-import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 
 @Service
 public class RemitoImpresionService {
 
-    private static final DecimalFormat DF = new DecimalFormat("#,##0.00");
-    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd MMM yyyy");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    public void generarRemitoPdf(Remito r, OutputStream out) {
+    public void generarRemitoPdf(Remito remito, OutputStream out) throws DocumentException {
 
-        Document document = new Document(PageSize.A4, 36, 36, 15, 80);
+        // Tamaño A4 horizontal para que sea más ancho
+        Document document = new Document(PageSize.A4);
+        PdfWriter.getInstance(document, out);
+        document.open();
 
-        try {
-            PdfWriter writer = PdfWriter.getInstance(document, out);
-            document.open();
+        // Fuentes
+        Font fontTitle = new Font(Font.HELVETICA, 14, Font.BOLD);
+        Font fontBold = new Font(Font.HELVETICA, 10, Font.BOLD);
+        Font font = new Font(Font.HELVETICA, 9);
+        Font fontSmall = new Font(Font.HELVETICA, 8);
+        Font fontTiny = new Font(Font.HELVETICA, 7);
 
-            agregarHeader(document, r);
-            agregarDatosCliente(document, r);
-            agregarCajaInfo(document, r);
-            agregarTablaItems(document, r);
-            agregarTotales(document, r);
-            agregarFirmas(document);
+        // ==========================================
+        // HEADER PRINCIPAL
+        // ==========================================
 
-        } catch (Exception e) {
-            throw new RuntimeException("Error generando PDF de remito", e);
-        } finally {
-            document.close();
-        }
-    }
+        PdfPTable headerTable = new PdfPTable(3);
+        headerTable.setWidthPercentage(100);
+        headerTable.setWidths(new float[]{2.5f, 0.5f, 2.5f});
 
-    // ==========================================
-    // HEADER (igual presupuesto)
-    // ==========================================
-    private void agregarHeader(Document document, Remito r) throws Exception {
-
-        Font titulo = FontFactory.getFont(FontFactory.HELVETICA, 22, Font.BOLD);
-        Font subtitulo = FontFactory.getFont(FontFactory.HELVETICA, 11, Font.BOLD, Color.DARK_GRAY);
-        Font empresaFont = FontFactory.getFont(FontFactory.HELVETICA, 10, Font.NORMAL, Color.GRAY);
-
-        PdfPTable table = new PdfPTable(2);
-        table.setWidthPercentage(100);
-        table.setWidths(new int[]{60, 40});
-
-        // 🔹 IZQUIERDA → TITULO + TIPO
         PdfPCell leftCell = new PdfPCell();
-        leftCell.setBorder(Rectangle.NO_BORDER);
-        leftCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        leftCell.setBorder(Rectangle.BOX);
+        leftCell.setPadding(6);
 
-        Paragraph p = new Paragraph();
-        p.add(new Chunk("REMITO\n", titulo));
+// 🔹 TABLA INTERNA (logo + datos)
+        PdfPTable innerTable = new PdfPTable(2);
+        innerTable.setWidthPercentage(100);
+        innerTable.setWidths(new float[]{1.5f, 3f});
 
-        String tipoTexto = r.getTipo() == Remito.Tipo.DEVOLUCION
-                ? "DEVOLUCIÓN"
-                : "ENTREGA";
-
-        p.add(new Chunk(tipoTexto, subtitulo));
-
-        leftCell.addElement(p);
-        table.addCell(leftCell);
+// LOGO
+        PdfPCell logoCell = new PdfPCell();
+        logoCell.setBorder(Rectangle.NO_BORDER);
 
         try {
             Image logo = Image.getInstance(getClass().getResource("/static/img/LOGO.jpg"));
-            logo.scaleToFit(400, 200);
-
-            PdfPCell logoCell = new PdfPCell(logo);
-            logoCell.setBorder(Rectangle.NO_BORDER);
-            logoCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-
-            table.addCell(logoCell);
-
+            logo.scaleToFit(100, 70);
+            logoCell.addElement(logo);
         } catch (Exception e) {
-            PdfPCell empty = new PdfPCell();
-            empty.setBorder(Rectangle.NO_BORDER);
-            table.addCell(empty);
+            logoCell.addElement(new Paragraph(" "));
         }
 
-        document.add(table);
+        innerTable.addCell(logoCell);
 
-        // 🔹 DATOS EMPRESA
-        Paragraph empresa = new Paragraph(
-                "MOBEZA ELECTRICIDAD, Acceso Norte, S/N, 2681 Etruria, Argentina",
-                empresaFont
-        );
-        empresa.setSpacingAfter(10);
-        document.add(empresa);
-    }
+// DATOS EMPRESA
+        PdfPCell dataCell = new PdfPCell();
+        dataCell.setBorder(Rectangle.NO_BORDER);
 
-    // ==========================================
-    // DATOS CLIENTE
-    // ==========================================
-    private void agregarDatosCliente(Document document, Remito r) throws Exception {
+        dataCell.addElement(new Paragraph("MOBEZA ELECTRICIDAD", fontBold));
+        dataCell.addElement(new Paragraph("Acceso Norte, S/N", font));
+        dataCell.addElement(new Paragraph("CP 2681 Etruria, Argentina", font));
+        dataCell.addElement(new Paragraph("Tel: (03534) 082798", fontSmall));
+        dataCell.addElement(new Paragraph("Email: nerypelaye@gmail.com", fontSmall));
 
-        Font bold = FontFactory.getFont(FontFactory.HELVETICA, 10, Font.BOLD);
-        Font normal = FontFactory.getFont(FontFactory.HELVETICA, 10);
+        innerTable.addCell(dataCell);
 
-        PdfPTable table = new PdfPTable(2);
-        table.setWidthPercentage(100);
-        table.setWidths(new int[]{50, 50});
+// agregar tabla a la celda
+        leftCell.addElement(innerTable);
 
-        PdfPCell leftCell = new PdfPCell();
-        leftCell.setBorder(Rectangle.NO_BORDER);
+// agregar al header
+        headerTable.addCell(leftCell);
 
-        Paragraph para = new Paragraph();
-        para.add(new Chunk("PARA\n", bold));
+        // COLUMNA CENTRO - Letra R
+        PdfPCell centerCell = new PdfPCell();
+        centerCell.setBorder(Rectangle.BOX);
+        centerCell.setPadding(5);
+        centerCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        centerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
 
-        if (r.getCliente() != null) {
+        Paragraph letra = new Paragraph("R", new Font(Font.HELVETICA, 36, Font.BOLD));
+        letra.setAlignment(Element.ALIGN_CENTER);
+        centerCell.addElement(letra);
 
-            para.add(new Chunk(
-                    "Nombre completo: " + r.getCliente().getNombre() + " " + r.getCliente().getApellido() + "\n",
-                    normal
-            ));
+        Paragraph docR = new Paragraph("COD. 91", fontTiny);
+        docR.setAlignment(Element.ALIGN_CENTER);
+        centerCell.addElement(docR);
 
-            if (r.getCliente().getDireccion() != null && !r.getCliente().getDireccion().isEmpty()) {
-                para.add(new Chunk(
-                        "Dirección: " + r.getCliente().getDireccion() + "\n",
-                        normal
-                ));
-            }
-            if (r.getCliente().getDni() != null && !r.getCliente().getDni().isEmpty()) {
-                para.add(new Chunk("DNI: " + r.getCliente().getDni() + "\n", normal));
-            }
+        headerTable.addCell(centerCell);
 
-        } else {
-            para.add(new Chunk("Consumidor Final\n", normal));
-        }
-
-        leftCell.addElement(para);
-        table.addCell(leftCell);
-
+        // COLUMNA DERECHA - Datos del remito
         PdfPCell rightCell = new PdfPCell();
-        rightCell.setBorder(Rectangle.NO_BORDER);
-        rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        rightCell.setBorder(Rectangle.BOX);
+        rightCell.setPadding(8);
 
-        Paragraph info = new Paragraph();
-        info.setAlignment(Element.ALIGN_RIGHT);
-        info.add(new Chunk("Remito n°:\n", normal));
-        info.add(new Chunk(r.getCodigo() + "\n", bold));
-        info.add(new Chunk("Fecha:\n", normal));
-        info.add(new Chunk(r.getFechaEmision().format(DATE_FMT), bold));
+        Paragraph tituloRemito = new Paragraph("REMITO", fontTitle);
+        tituloRemito.setAlignment(Element.ALIGN_CENTER);
+        rightCell.addElement(tituloRemito);
 
-        rightCell.addElement(info);
-        table.addCell(rightCell);
+        Paragraph subtitulo = new Paragraph("DOCUMENTO NO VÁLIDO", fontSmall);
+        subtitulo.setAlignment(Element.ALIGN_CENTER);
+        rightCell.addElement(subtitulo);
 
-        document.add(table);
-        document.add(new Paragraph(" "));
-    }
+        Paragraph subtitulo2 = new Paragraph("COMO FACTURA", fontSmall);
+        subtitulo2.setAlignment(Element.ALIGN_CENTER);
+        rightCell.addElement(subtitulo2);
 
-    // ==========================================
-    // CAJA AMARILLA
-    // ==========================================
-    private void agregarCajaInfo(Document document, Remito r) throws Exception {
+        rightCell.addElement(new Paragraph(" ", fontTiny));
 
-        Font white = FontFactory.getFont(FontFactory.HELVETICA, 9, Font.BOLD, Color.WHITE);
-        Font whiteSmall = FontFactory.getFont(FontFactory.HELVETICA, 8, Font.NORMAL, Color.WHITE);
+        Paragraph numero = new Paragraph("Nº " + remito.getCodigo(), fontBold);
+        numero.setAlignment(Element.ALIGN_CENTER);
+        rightCell.addElement(numero);
 
-        Color amarillo = new Color(218, 198, 125);
+        rightCell.addElement(new Paragraph(" ", fontSmall));
 
-        PdfPTable table = new PdfPTable(3);
-        table.setWidthPercentage(100);
-        table.setWidths(new int[]{33, 33, 34});
-        table.setSpacingBefore(10);
-        table.setSpacingAfter(15);
+        headerTable.addCell(rightCell);
 
-        table.addCell(celdaCaja("Remito n°", r.getCodigo(), white, whiteSmall, amarillo));
-        table.addCell(celdaCaja("Fecha", r.getFechaEmision().format(DATE_FMT), white, whiteSmall, amarillo));
-        table.addCell(celdaCaja("Tipo", r.getTipo().toString(), white, whiteSmall, amarillo));
+        document.add(headerTable);
+        document.add(new Paragraph(" ", fontTiny));
 
-        document.add(table);
-    }
+        // ==========================================
+        // DATOS DEL CLIENTE Y FECHA
+        // ==========================================
+        PdfPTable clienteTable = new PdfPTable(2);
+        clienteTable.setWidthPercentage(100);
+        clienteTable.setWidths(new float[]{3f, 1.5f});
 
-    // ==========================================
-    // TABLA ITEMS
-    // ==========================================
-    private void agregarTablaItems(Document document, Remito r) throws Exception {
+        // Datos del cliente
+        PdfPCell clienteCell = new PdfPCell();
+        clienteCell.setBorder(Rectangle.BOX);
+        clienteCell.setPadding(5);
 
-        Font header = FontFactory.getFont(FontFactory.HELVETICA, 9, Font.BOLD);
-        Font normal = FontFactory.getFont(FontFactory.HELVETICA, 9);
-
-        PdfPTable table = new PdfPTable(4);
-        table.setWidthPercentage(100);
-        table.setWidths(new int[]{50, 15, 20, 15});
-
-        table.addCell(celdaHeader("Descripción", header));
-        table.addCell(celdaHeader("Cant.", header));
-        table.addCell(celdaHeader("Precio", header));
-        table.addCell(celdaHeader("Subtotal", header));
-
-        for (RemitoItem item : r.getItems()) {
-
-            table.addCell(celdaNormal(item.getProducto().getDescripcion(), normal));
-            table.addCell(celdaNormal(item.getCantidad().toString(), normal));
-            table.addCell(celdaNormal("$ " + DF.format(item.getPrecioUnitario()), normal));
-            table.addCell(celdaNormal("$ " + DF.format(item.getSubtotal()), normal));
+        String nombreCliente = "__________________";
+        if (remito.getCliente() != null) {
+            nombreCliente = remito.getCliente().getNombre() + " " + remito.getCliente().getApellido();
         }
 
-        document.add(table);
-    }
+        clienteCell.addElement(new Paragraph("Sr/es: " + nombreCliente, font));
 
-    // ==========================================
-    // TOTAL
-    // ==========================================
-    private void agregarTotales(Document document, Remito r) throws Exception {
+        String domicilio = "__________________";
+        if (remito.getDireccionEntrega() != null && !remito.getDireccionEntrega().isEmpty()) {
+            domicilio = remito.getDireccionEntrega();
+        } else if (remito.getCliente() != null && remito.getCliente().getDireccion() != null) {
+            domicilio = remito.getCliente().getDireccion();
+        }
 
-        Font bold = FontFactory.getFont(FontFactory.HELVETICA, 11, Font.BOLD);
+        clienteCell.addElement(new Paragraph("Domicilio: " + domicilio, font));
 
-        PdfPTable table = new PdfPTable(2);
-        table.setWidthPercentage(50);
-        table.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        table.setSpacingBefore(15);
+        clienteTable.addCell(clienteCell);
 
-        PdfPCell label = new PdfPCell(new Phrase("Total (ARS):", bold));
-        label.setBorder(Rectangle.NO_BORDER);
-        label.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        table.addCell(label);
+        // Fecha
+        PdfPCell fechaCell = new PdfPCell();
+        fechaCell.setBorder(Rectangle.BOX);
+        fechaCell.setPadding(5);
 
-        PdfPCell value = new PdfPCell(new Phrase("$ " + DF.format(r.getTotal()), bold));
-        value.setBorder(Rectangle.NO_BORDER);
-        value.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        table.addCell(value);
+        String fecha = remito.getFechaEmision().format(DATE_FORMATTER);
+        fechaCell.addElement(new Paragraph("Fecha: " + fecha, font));
 
-        document.add(table);
-    }
+        clienteTable.addCell(fechaCell);
 
-    // ==========================================
-    // FIRMAS
-    // ==========================================
-    private void agregarFirmas(Document document) throws Exception {
+        document.add(clienteTable);
 
-        Font font = new Font(Font.HELVETICA, 9);
+        // ==========================================
+        // CONDICIONES IVA Y CONDICIONES DE VENTA
+        // ==========================================
+        PdfPTable condicionesTable = new PdfPTable(4);
+        condicionesTable.setWidthPercentage(100);
+        condicionesTable.setWidths(new float[]{1.5f, 1f, 1f, 2f});
 
-        PdfPTable table = new PdfPTable(2);
-        table.setWidthPercentage(100);
+        // IVA
+        PdfPCell ivaLabelCell = new PdfPCell(new Phrase("IVA", font));
+        ivaLabelCell.setBorder(Rectangle.BOX);
+        ivaLabelCell.setPadding(5);
+        condicionesTable.addCell(ivaLabelCell);
 
-        table.addCell(celdaFirma("Firma quien entrega", font));
-        table.addCell(celdaFirma("Firma quien recibe", font));
+        String condicionIva = "Consumidor Final";
+        if (remito.getCliente() != null && remito.getCliente().getCondicionIva() != null) {
+            condicionIva = switch (remito.getCliente().getCondicionIva()) {
+                case RESPONSABLE_INSCRIPTO -> "Responsable Inscripto";
+                case CONSUMIDOR_FINAL -> "Consumidor Final";
+                default -> "Consumidor Final";
+            };
+        }
 
-        document.add(table);
-    }
+        PdfPCell ivaValueCell = new PdfPCell(new Phrase(condicionIva, font));
+        ivaValueCell.setBorder(Rectangle.BOX);
+        ivaValueCell.setPadding(5);
+        ivaValueCell.setColspan(3);
+        condicionesTable.addCell(ivaValueCell);
 
-    // ==========================================
-    // HELPERS
-    // ==========================================
-    private PdfPCell celdaHeader(String texto, Font font) {
-        PdfPCell cell = new PdfPCell(new Phrase(texto, font));
-        cell.setBackgroundColor(Color.LIGHT_GRAY);
-        cell.setPadding(6);
-        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        return cell;
-    }
+        // CUIT del cliente
+        PdfPCell cuitLabelCell = new PdfPCell(new Phrase("CUIT", font));
+        cuitLabelCell.setBorder(Rectangle.BOX);
+        cuitLabelCell.setPadding(5);
+        condicionesTable.addCell(cuitLabelCell);
 
-    private PdfPCell celdaNormal(String texto, Font font) {
-        PdfPCell cell = new PdfPCell(new Phrase(texto, font));
-        cell.setPadding(6);
-        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        return cell;
-    }
+        String cuitCliente = "_________";
+        if (remito.getCliente() != null && remito.getCliente().getDni() != null) {
+            cuitCliente = remito.getCliente().getDni();
+        }
 
-    private PdfPCell celdaCaja(String label, String value, Font bold, Font normal, Color bg) {
-        PdfPCell cell = new PdfPCell();
-        cell.setBackgroundColor(bg);
-        cell.setBorder(Rectangle.NO_BORDER);
-        cell.setPadding(8);
+        PdfPCell cuitValueCell = new PdfPCell(new Phrase(cuitCliente, font));
+        cuitValueCell.setBorder(Rectangle.BOX);
+        cuitValueCell.setPadding(5);
+        cuitValueCell.setColspan(3);
+        condicionesTable.addCell(cuitValueCell);
 
-        Paragraph p = new Paragraph();
-        p.add(new Chunk(label + "\n", normal));
-        p.add(new Chunk(value, bold));
+        // Condiciones de venta
+        PdfPCell condVentaCell = new PdfPCell(new Phrase("Condiciones de venta", font));
+        condVentaCell.setBorder(Rectangle.BOX);
+        condVentaCell.setPadding(5);
+        condicionesTable.addCell(condVentaCell);
 
-        cell.addElement(p);
-        return cell;
-    }
+        String contado = "Contado [ ]";
+        String ctaCte = "Cta. Cte. [ ]";
+        String tarjeta = "Tarjeta [ ]";
 
-    private PdfPCell celdaFirma(String texto, Font font) {
-        PdfPCell cell = new PdfPCell();
-        cell.setBorder(Rectangle.NO_BORDER);
-        cell.setPaddingTop(30);
+        if (remito.getVenta() != null && remito.getVenta().getFormaPago() != null) {
 
-        Paragraph line = new Paragraph("_________________________", font);
-        line.setAlignment(Element.ALIGN_CENTER);
+            if (remito.getVenta().getFormaPago() == FormaPago.CONTADO) {
+                contado = "Contado [X]";
+            }
+            else if (remito.getVenta().getFormaPago() == FormaPago.TARJETA) {
+                tarjeta = "Tarjeta [X]";
+            }
+            else {
+                ctaCte = "Cta. Cte. [X]";
+            }
+        }
+        PdfPCell contadoCell = new PdfPCell(new Phrase(contado, font));
+        contadoCell.setBorder(Rectangle.BOX);
+        contadoCell.setPadding(5);
+        condicionesTable.addCell(contadoCell);
 
-        Paragraph label = new Paragraph(texto, font);
-        label.setAlignment(Element.ALIGN_CENTER);
+        PdfPCell tarjetaCell = new PdfPCell(new Phrase(tarjeta, font));
+        tarjetaCell.setBorder(Rectangle.BOX);
+        tarjetaCell.setPadding(5);
+        condicionesTable.addCell(tarjetaCell);
 
-        cell.addElement(line);
-        cell.addElement(label);
+        PdfPCell ctaCteCell = new PdfPCell(new Phrase(ctaCte, font));
+        ctaCteCell.setBorder(Rectangle.BOX);
+        ctaCteCell.setPadding(5);
+        condicionesTable.addCell(ctaCteCell);
 
-        return cell;
+        document.add(condicionesTable);
+
+        // ==========================================
+        // TABLA DE ITEMS
+        // ==========================================
+        PdfPTable itemsTable = new PdfPTable(2);
+        itemsTable.setWidthPercentage(100);
+        itemsTable.setWidths(new float[]{1f, 7f});
+        itemsTable.setSpacingBefore(5);
+
+        // Header
+        PdfPCell cantidadHeader = new PdfPCell(new Phrase("CANTIDAD", fontBold));
+        cantidadHeader.setBorder(Rectangle.BOX);
+        cantidadHeader.setPadding(5);
+        cantidadHeader.setBackgroundColor(new Color(220, 220, 220));
+        cantidadHeader.setHorizontalAlignment(Element.ALIGN_CENTER);
+        itemsTable.addCell(cantidadHeader);
+
+        PdfPCell descripcionHeader = new PdfPCell(new Phrase("DESCRIPCIÓN", fontBold));
+        descripcionHeader.setBorder(Rectangle.BOX);
+        descripcionHeader.setPadding(5);
+        descripcionHeader.setBackgroundColor(new Color(220, 220, 220));
+        itemsTable.addCell(descripcionHeader);
+
+        // Items del remito
+        for (RemitoItem item : remito.getItems()) {
+            // Cantidad
+            PdfPCell cantCell = new PdfPCell(new Phrase(item.getCantidad().toString(), font));
+            cantCell.setBorder(Rectangle.BOX);
+            cantCell.setPadding(5);
+            cantCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cantCell.setMinimumHeight(25);
+            itemsTable.addCell(cantCell);
+
+            // Descripción
+            String descripcion = item.getProducto().getDescripcion();
+
+            PdfPCell descCell = new PdfPCell(new Phrase(descripcion, font));
+            descCell.setBorder(Rectangle.BOX);
+            descCell.setPadding(5);
+            descCell.setMinimumHeight(25);
+            itemsTable.addCell(descCell);
+        }
+
+        // Líneas vacías para completar el remito (mínimo 10 líneas)
+        int lineasVacias = Math.max(0, 10 - remito.getItems().size());
+        for (int i = 0; i < lineasVacias; i++) {
+            PdfPCell emptyCell1 = new PdfPCell(new Phrase(" ", font));
+            emptyCell1.setBorder(Rectangle.BOX);
+            emptyCell1.setPadding(5);
+            emptyCell1.setMinimumHeight(25);
+            itemsTable.addCell(emptyCell1);
+
+            PdfPCell emptyCell2 = new PdfPCell(new Phrase(" ", font));
+            emptyCell2.setBorder(Rectangle.BOX);
+            emptyCell2.setPadding(5);
+            emptyCell2.setMinimumHeight(25);
+            itemsTable.addCell(emptyCell2);
+        }
+
+        document.add(itemsTable);
+
+        // ==========================================
+        // OBSERVACIONES
+        // ==========================================
+        document.add(new Paragraph(" ", fontSmall));
+
+        PdfPTable obsTable = new PdfPTable(1);
+        obsTable.setWidthPercentage(100);
+
+        String observaciones = remito.getObservaciones() != null ?
+                remito.getObservaciones() : "";
+
+        PdfPCell obsCell = new PdfPCell(new Phrase("Observaciones: " + observaciones, font));
+        obsCell.setBorder(Rectangle.BOX);
+        obsCell.setPadding(8);
+        obsCell.setMinimumHeight(40);
+        obsTable.addCell(obsCell);
+
+        document.add(obsTable);
+
+        // ==========================================
+        // FIRMAS
+        // ==========================================
+        document.add(new Paragraph(" ", font));
+
+        PdfPTable firmasTable = new PdfPTable(2);
+        firmasTable.setWidthPercentage(100);
+        firmasTable.setWidths(new float[]{1f, 1f});
+        firmasTable.setSpacingBefore(20);
+
+        // Firma izquierda
+        PdfPCell firmaIzq = new PdfPCell();
+        firmaIzq.setBorder(Rectangle.NO_BORDER);
+        firmaIzq.setMinimumHeight(60);
+        Paragraph pIzq = new Paragraph("_________", font);
+        pIzq.setAlignment(Element.ALIGN_CENTER);
+        firmaIzq.addElement(pIzq);
+        Paragraph labelIzq = new Paragraph("Firma y aclaración\nQUIEN ENTREGA", fontSmall);
+        labelIzq.setAlignment(Element.ALIGN_CENTER);
+        firmaIzq.addElement(labelIzq);
+        firmasTable.addCell(firmaIzq);
+
+        // Firma derecha
+        PdfPCell firmaDer = new PdfPCell();
+        firmaDer.setBorder(Rectangle.NO_BORDER);
+        firmaDer.setMinimumHeight(60);
+        Paragraph pDer = new Paragraph("_________", font);
+        pDer.setAlignment(Element.ALIGN_CENTER);
+        firmaDer.addElement(pDer);
+        Paragraph labelDer = new Paragraph("Firma y aclaración\nQUIEN RECIBE", fontSmall);
+        labelDer.setAlignment(Element.ALIGN_CENTER);
+        firmaDer.addElement(labelDer);
+        firmasTable.addCell(firmaDer);
+
+        document.add(firmasTable);
+
+        document.close();
     }
 }

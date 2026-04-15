@@ -165,4 +165,10 @@
                                 : 'none';
                         });
                     });
+                    <c:if test="${param.pdf == 'true'}">
+                            window.open(
+                                '${pageContext.request.contextPath}/presupuestos/${presupuesto.id}/pdf',
+                                '_blank'
+                            );
+                    </c:if>
                     </script>

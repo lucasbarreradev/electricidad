@@ -79,16 +79,17 @@ public class PresupuestoController {
     // CREAR PRESUPUESTO
     // ==========================================
     @PostMapping("/guardar")
-    public void guardar(
+    public String guardar(
             @RequestParam(required = false) Long clienteId,
             @RequestParam FormaPago formaPago,
             @RequestParam List<Long> productoIds,
             @RequestParam List<Integer> cantidades,
             @RequestParam(required = false) List<BigDecimal> descuentos,
-            HttpServletResponse response
+            RedirectAttributes ra
     ) {
 
         try {
+
             Presupuesto presupuesto = presupuestoService.crear(
                     clienteId,
                     formaPago,
@@ -97,20 +98,14 @@ public class PresupuestoController {
                     descuentos
             );
 
-            response.reset();
-            response.setContentType("application/pdf");
-            response.setHeader(
-                    "Content-Disposition",
-                    "attachment; filename=\"presupuesto_" + presupuesto.getCodigo() + ".pdf\""
-            );
+            ra.addFlashAttribute("mensaje", "Presupuesto creado: " + presupuesto.getCodigo());
 
-            try (OutputStream out = response.getOutputStream()) {
-                presupuestoPdfService.generarPdf(presupuesto, out);
-                out.flush();
-            }
+            // 👇 CLAVE: mandamos el ID para abrir el PDF después
+            return "redirect:/presupuestos/detalle/" + presupuesto.getId() + "?pdf=true";
 
         } catch (Exception e) {
-            throw new RuntimeException("Error al generar presupuesto", e);
+            ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/presupuestos/nuevo";
         }
     }
 
@@ -278,7 +273,8 @@ public class PresupuestoController {
     public void generarPdf(
             @PathVariable Long id,
             HttpServletResponse response
-    ) throws Exception {
+    ) {
+        try {
 
         Presupuesto presupuesto = presupuestoService.buscarPorId(id);
 
@@ -292,7 +288,9 @@ public class PresupuestoController {
                 presupuesto,
                 response.getOutputStream()
         );
+    } catch (Exception e) {
+        throw new RuntimeException("Error generando PDF", e);
+    }
     }
 
-
-}
+    }
