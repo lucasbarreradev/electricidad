@@ -116,5 +116,25 @@
                 </footer>
     </div>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const params = new URLSearchParams(window.location.search);
+    const remitoId = params.get('remitoId');
+
+    if (remitoId) {
+
+        const url = '${pageContext.request.contextPath}/remitos/' + remitoId + '/pdf';
+
+        const win = window.open(url, '_blank');
+
+        if (!win) {
+            window.location.href = url;
+        }
+    }
+
+});
+</script>
+
 
 

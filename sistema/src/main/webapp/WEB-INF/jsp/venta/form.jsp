@@ -167,6 +167,29 @@
                         <small class="text-muted" id="detalleRecargo"></small>
                     </div>
 
+                    <!-- ========================================== -->
+                    <!-- OPCIÓN DE REMITO (NUEVO) -->
+                    <!-- ========================================== -->
+                    <div class="mb-3">
+                        <div class="card border-info">
+                            <div class="card-body py-2">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="generarRemito"
+                                           id="generarRemito"
+                                           value="true">
+                                    <label class="form-check-label fw-semibold" for="generarRemito">
+                                        📦 Generar remito junto con la venta
+                                    </label>
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    Se generará un remito adicional a la venta
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="itemsHidden"></div>
 
                     <button type="submit"
@@ -427,7 +450,7 @@ document.getElementById("buscarProducto").addEventListener("keyup", function() {
 
             data.forEach(p => {
                 let stock = p.cantidad || 0;
-                let badgeClass = stock <= 5 ? 'bg-danger' : stock <= 20 ? 'bg-warning text-dark' : 'bg-success';
+                let badgeClass = stock <= 5 ? 'bg-danger text-white' : stock <= 20 ? 'bg-warning text-dark' : 'bg-success text-white';
 
                 html +=
                     "<a href='#' class='list-group-item list-group-item-action producto-item' " +

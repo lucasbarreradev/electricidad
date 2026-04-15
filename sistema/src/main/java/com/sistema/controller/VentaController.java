@@ -1,10 +1,8 @@
 package com.sistema.controller;
 
 import com.sistema.model.*;
-import com.sistema.repository.ClienteRepository;
-import com.sistema.repository.ProductoRepository;
-import com.sistema.repository.VentaItemRepository;
-import com.sistema.repository.VentaRepository;
+import com.sistema.repository.*;
+import com.sistema.service.RemitoService;
 import com.sistema.service.VentaService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -25,17 +23,23 @@ public class VentaController {
     private final ClienteRepository clienteRepo;
     private final VentaRepository ventaRepo;
     private final VentaItemRepository ventaItemRepo;
+    private final RemitoService remitoService;
+    private final RemitoRepository remitoRepo;
 
     public VentaController(VentaService ventaService,
                            ProductoRepository productoRepo,
                            ClienteRepository clienteRepo,
                            VentaRepository ventaRepo,
-                           VentaItemRepository ventaItemRepo) {
+                           VentaItemRepository ventaItemRepo,
+                           RemitoService remitoService,
+                           RemitoRepository remitoRepo) {
         this.ventaService = ventaService;
         this.productoRepo = productoRepo;
         this.clienteRepo = clienteRepo;
         this.ventaRepo = ventaRepo;
         this.ventaItemRepo = ventaItemRepo;
+        this.remitoService = remitoService;
+        this.remitoRepo = remitoRepo;
     }
 
     // ==========================================
@@ -80,6 +84,7 @@ public class VentaController {
             @RequestParam(required = false) List<Long> productoIds,
             @RequestParam(required = false) List<Integer> cantidades,
             @RequestParam(required = false) List<BigDecimal> descuentos,
+            @RequestParam(value = "generarRemito", defaultValue = "false") Boolean generarRemito,
             RedirectAttributes ra
     ) {
 
@@ -123,12 +128,20 @@ public class VentaController {
             }
 
 
-            ventaService.crearVentaDirecta(
+            Venta venta = ventaService.crearVentaDirecta(
                     clienteId,
                     items,
                     formaPago,
                     nota
             );
+
+            if (generarRemito) {
+                Remito remito = remitoService.crearDesdeVenta(venta);
+
+                ra.addFlashAttribute("mensaje", "Venta realizada correctamente");
+
+                return "redirect:/ventas?remitoId=" + remito.getId();
+            }
 
             ra.addFlashAttribute("mensaje", "Venta realizada correctamente");
             return "redirect:/ventas";
@@ -148,10 +161,15 @@ public class VentaController {
             @PathVariable Long id,
             @RequestParam FormaPago formaPago,
             @RequestParam(required = false) String nota,
+            @RequestParam(value = "generarRemito", defaultValue = "false") Boolean generarRemito,
             RedirectAttributes ra
     ) {
         try {
-            ventaService.crearDesdePresupuesto(id, formaPago);
+            Venta venta = ventaService.crearDesdePresupuesto(id, formaPago);
+            if (generarRemito) {
+                Remito remito = remitoService.crearDesdeVenta(venta);
+                return "redirect:/remitos/" + remito.getId() + "/pdf";
+            }
             ra.addFlashAttribute("mensaje", "Venta creada desde presupuesto");
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
@@ -168,12 +186,13 @@ public class VentaController {
 
         Venta venta = ventaRepo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Venta no encontrada"));
-
+        List<Remito> remitos = remitoRepo.findByVentaId(venta.getId());
         // ✅ Esto devuelve neto, IVA, total y el map de ivas
         TotalesConIva totales = ventaService.calcularTotalesConIvaMap(venta);
 
         model.addAttribute("venta", venta);
-        model.addAttribute("totales", totales);  //
+        model.addAttribute("totales", totales);
+        model.addAttribute("remitos", remitos);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
         model.addAttribute("fechaVentaFmt",

@@ -176,20 +176,12 @@
                             <c:if test="${presupuesto.estado == 'PENDIENTE'}">
                                 <div class="d-flex gap-2 mt-3">
 
-                                    <!-- APROBAR -->
-                                    <form action="${pageContext.request.contextPath}/presupuestos/aprobar"
-                                          method="post"
-
-                                          onsubmit="return confirm('¿Aprobar este presupuesto y generar la venta?')">
-                                        <input type="hidden"
-                                                                                             name="${_csrf.parameterName}"
-                                                                                             value="${_csrf.token}"/>
-                                        <input type="hidden" name="id" value="${presupuesto.id}" />
-
-                                        <button type="submit" class="btn btn-success mr-2">
+                                        <button type="button"
+                                                class="btn btn-success"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalAprobar">
                                             ✅ Aprobar presupuesto
                                         </button>
-                                    </form>
 
                                     <!-- RECHAZAR -->
                                     <form action="${pageContext.request.contextPath}/presupuestos/rechazar"
@@ -237,20 +229,38 @@
                 <h5 class="modal-title">Aprobar Presupuesto</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="${pageContext.request.contextPath}/presupuestos/${presupuesto.id}/aprobar"
+            <form action="${pageContext.request.contextPath}/presupuestos/aprobar"
                   method="post">
+                  <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                  <input type="hidden" name="id" value="${presupuesto.id}" />
                 <div class="modal-body">
                     <p>Al aprobar este presupuesto se creará automáticamente una venta
                        y se restará el stock de los productos.</p>
 
-                    <label class="form-label fw-semibold">Forma de pago *</label>
-                    <select name="formaPago" class="form-select" required>
-                        <option value="">-- Seleccionar --</option>
-                        <c:forEach items="${formasPago}" var="fp">
-                            <option value="${fp}">${fp}</option>
-                        </c:forEach>
-                    </select>
+
                 </div>
+                <!-- ========================================== -->
+                                    <!-- OPCIÓN GENERAR REMITO (NUEVO) -->
+                                    <!-- ========================================== -->
+                                    <div class="mb-3">
+                                        <div class="card border-info">
+                                            <div class="card-body py-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input"
+                                                           type="checkbox"
+                                                           name="generarRemito"
+                                                           id="generarRemitoPresupuesto"
+                                                           value="true">
+                                                    <label class="form-check-label fw-semibold" for="generarRemitoPresupuesto">
+                                                        📦 Generar remito junto con la venta
+                                                    </label>
+                                                </div>
+                                                <small class="text-muted d-block mt-1">
+                                                    Se generará un remito adicional a la venta
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary"
                             data-bs-dismiss="modal">Cancelar</button>

@@ -212,32 +212,32 @@
                             </div>
                         </c:if>
 
-                        <!-- BOTÓN ANULAR -->
                         <c:if test="${venta.estado == 'COMPLETADA'}">
-                            <form action="${pageContext.request.contextPath}/ventas/anular"
-                                  method="post"
-                                  class="mt-2"
-                                  onsubmit="return confirm('¿Anular esta venta? Se devolverá el stock.')">
-                                <input type="hidden"
-                                                                                     name="${_csrf.parameterName}"
-                                                                                     value="${_csrf.token}"/>
-                                <input type="hidden" name="id" value="${venta.id}"/>
+                            <div class="d-flex gap-2 mt-2">
 
-                                <button type="submit"
-                                        class="btn btn-outline-danger">
-                                    ❌ Anular venta
-                                </button>
-                            </form>
+                                <!-- ANULAR -->
+                                <form action="${pageContext.request.contextPath}/ventas/anular"
+                                      method="post"
+                                      onsubmit="return confirm('¿Anular esta venta? Se devolverá el stock.')">
+                                    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                    <input type="hidden" name="id" value="${venta.id}"/>
+
+                                    <button type="submit" class="btn btn-outline-danger">
+                                        ❌ Anular venta
+                                    </button>
+                                </form>
+
+                                <c:forEach items="${remitos}" var="r">
+                                    <a href="${pageContext.request.contextPath}/remitos/${r.id}/pdf"
+                                       class="btn btn-outline-secondary"
+                                       target="_blank">
+                                        📄 Descargar remito
+                                    </a>
+                                </c:forEach>
+
+                            </div>
                         </c:if>
-
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-    </c:if>
-
+</c:if>
 </div>
 
 <!-- Footer -->
@@ -249,5 +249,24 @@
     </div>
 </footer>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const params = new URLSearchParams(window.location.search);
+    const remitoId = params.get('remitoId');
+
+    if (remitoId) {
+
+        const url = '${pageContext.request.contextPath}/remitos/' + remitoId + '/pdf';
+
+        const win = window.open(url, '_blank');
+
+        if (!win) {
+            window.location.href = url;
+        }
+    }
+
+});
+</script>
 </body>
 </html>

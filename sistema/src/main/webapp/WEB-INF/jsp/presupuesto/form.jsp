@@ -464,7 +464,7 @@ document.getElementById("buscarProducto").addEventListener("keyup", function() {
             } else {
                 data.forEach(p => {
                     let stock = p.cantidad || 0;
-                    let badgeClass = stock <= 5 ? 'bg-danger' : stock <= 20 ? 'bg-warning text-dark' : 'bg-success';
+                    let badgeClass = stock <= 5 ? 'bg-danger text-white' : stock <= 20 ? 'bg-warning text-dark' : 'bg-success text-white';
 
                     html +=
                         "<a href='#' class='list-group-item list-group-item-action producto-item' " +

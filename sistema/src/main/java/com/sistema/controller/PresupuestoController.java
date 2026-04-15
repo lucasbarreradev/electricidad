@@ -4,6 +4,7 @@ import com.sistema.model.*;
 import com.sistema.repository.*;
 import com.sistema.service.PresupuestoPdfService;
 import com.sistema.service.PresupuestoService;
+import com.sistema.service.RemitoService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,17 +25,20 @@ public class PresupuestoController {
     private final ClienteRepository clienteRepo;
     private final PresupuestoRepository presupuestoRepo;
     private final PresupuestoPdfService presupuestoPdfService;
+    private final RemitoService remitoService;
 
     public PresupuestoController(PresupuestoService presupuestoService,
                                  ProductoRepository productoRepo,
                                  ClienteRepository clienteRepo,
                                  PresupuestoRepository presupuestoRepo,
-                                 PresupuestoPdfService presupuestoPdfService) {
+                                 PresupuestoPdfService presupuestoPdfService,
+                                 RemitoService remitoService) {
         this.presupuestoService = presupuestoService;
         this.productoRepo = productoRepo;
         this.clienteRepo = clienteRepo;
         this.presupuestoRepo = presupuestoRepo;
         this.presupuestoPdfService = presupuestoPdfService;
+        this.remitoService = remitoService;
     }
 
     // ==========================================
@@ -217,10 +221,19 @@ public class PresupuestoController {
     // ==========================================
     @PostMapping("/aprobar")
     public String aprobar(@RequestParam Long id,
+                          @RequestParam(value = "generarRemito", defaultValue = "false") Boolean generarRemito,
                           RedirectAttributes ra) {
 
         try {
             Venta venta = presupuestoService.aprobar(id);
+            if (generarRemito) {
+                Remito remito = remitoService.crearDesdeVenta(venta);
+
+                ra.addFlashAttribute("mensaje",
+                        "Venta generada: " + venta.getCodigo());
+
+                return "redirect:/ventas/detalle/" + venta.getId() + "?remitoId=" + remito.getId();
+            }
 
             ra.addFlashAttribute("mensaje",
                     "Presupuesto aprobado. Venta generada: " + venta.getCodigo());
