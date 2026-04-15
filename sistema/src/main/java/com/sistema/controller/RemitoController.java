@@ -2,6 +2,7 @@ package com.sistema.controller;
 
 import com.sistema.model.*;
 import com.sistema.repository.ClienteRepository;
+import com.sistema.repository.VentaRepository;
 import com.sistema.service.RemitoImpresionService;
 import com.sistema.service.RemitoService;
 import org.springframework.stereotype.Controller;
@@ -21,13 +22,15 @@ public class RemitoController {
     private final RemitoService remitoService;
     private final ClienteRepository clienteRepo;
     private final RemitoImpresionService remitoImpresionService;
-
+    private final VentaRepository ventaRepo;
     public RemitoController(RemitoService remitoService,
                             ClienteRepository clienteRepo,
-                            RemitoImpresionService remitoImpresionService) {
+                            RemitoImpresionService remitoImpresionService,
+                            VentaRepository ventaRepo) {
         this.remitoService = remitoService;
         this.clienteRepo = clienteRepo;
         this.remitoImpresionService = remitoImpresionService;
+        this.ventaRepo = ventaRepo;
     }
 
     // ==========================================
@@ -198,6 +201,32 @@ public class RemitoController {
 
         try {
             Remito remito = remitoService.buscarPorId(id);
+
+            response.setContentType("application/pdf");
+            response.setHeader("Content-Disposition",
+                    "attachment; filename=Remito_" + remito.getCodigo() + ".pdf");
+
+            OutputStream out = response.getOutputStream();
+            remitoImpresionService.generarRemitoPdf(remito, out);
+            out.flush();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    @GetMapping("/venta/{ventaId}/pdf")
+    public void generarDesdeVenta(@PathVariable Long ventaId, HttpServletResponse response) {
+
+        try {
+            Remito remito = remitoService.buscarPorVentaId(ventaId);
+
+            if (remito == null) {
+
+                Venta venta = ventaRepo.findById(ventaId)
+                        .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+
+                remito = remitoService.crearDesdeVenta(venta);
+            }
 
             response.setContentType("application/pdf");
             response.setHeader("Content-Disposition",

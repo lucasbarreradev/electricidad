@@ -254,6 +254,10 @@ public class RemitoService {
         return remitoGuardado;
     }
 
+    public Remito buscarPorVentaId(Long ventaId) {
+        return remitoRepo.findByVentaId(ventaId).stream().findFirst().orElse(null);
+    }
+
     // ==========================================
     // LISTADOS
     // ==========================================
@@ -273,4 +277,6 @@ public class RemitoService {
         return remitoRepo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Remito no encontrado"));
     }
+
+
 }

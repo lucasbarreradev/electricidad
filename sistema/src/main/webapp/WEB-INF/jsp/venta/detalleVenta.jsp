@@ -228,10 +228,10 @@
                                 </form>
 
                                 <c:forEach items="${remitos}" var="r">
-                                    <a href="${pageContext.request.contextPath}/remitos/${r.id}/pdf"
-                                       class="btn btn-outline-secondary"
+                                    <a href="${pageContext.request.contextPath}/remitos/venta/${venta.id}/pdf"
+                                       class="btn btn-outline-primary"
                                        target="_blank">
-                                        📄 Descargar remito
+                                       📄 Generar / Descargar remito
                                     </a>
                                 </c:forEach>
 
