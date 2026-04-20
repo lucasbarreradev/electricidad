@@ -2,12 +2,12 @@
 
 Aplicación web completa para la gestión de una tienda de electricidad, desarrollada con Spring Boot. Permite administrar stock, ventas y flujo comercial en tiempo real.
 
----
+
 
 ## 🚀 Demo
 👉 https://youtu.be/IBmQhOAkXSs
 
----
+
 
 ## ⚙️ Tecnologías
 - Java + Spring Boot
@@ -18,7 +18,7 @@ Aplicación web completa para la gestión de una tienda de electricidad, desarro
 - Docker
 - VPS (deploy productivo)
 
----
+
 
 ## 🧩 Funcionalidades
 
@@ -29,7 +29,7 @@ Aplicación web completa para la gestión de una tienda de electricidad, desarro
 - Generación de comprobantes  
 - Autenticación con roles (admin / empleado)  
 
----
+
 
 ## 🧠 Lo más importante (diferencial)
 
@@ -39,7 +39,7 @@ Aplicación web completa para la gestión de una tienda de electricidad, desarro
 - Manejo de transacciones con @Transactional  
 - Deploy en VPS con Docker  
 
----
+
 
 ## 🚀 Ejecución con Docker
 
