@@ -173,36 +173,46 @@
 
 
 
-                            <c:if test="${presupuesto.estado == 'PENDIENTE'}">
-                                <div class="d-flex gap-2 mt-3">
+                            <div class="d-flex gap-2 mt-3 flex-wrap">
 
-                                        <button type="button"
-                                                class="btn btn-success"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#modalAprobar">
-                                            ✅ Aprobar presupuesto
-                                        </button>
+                                <!-- APROBAR (solo PENDIENTE) -->
+                                <c:if test="${presupuesto.estado == 'PENDIENTE'}">
+                                    <button type="button"
+                                            class="btn btn-success"
+                                            data-toggle="modal"
+                                            data-target="#modalAprobar">
+                                        ✅ Aprobar presupuesto
+                                    </button>
+                                </c:if>
 
-                                    <!-- RECHAZAR -->
+                                <!-- EDITAR (PENDIENTE y APROBADO) -->
+                                <c:if test="${presupuesto.estado == 'PENDIENTE' || presupuesto.estado == 'APROBADO'}">
+                                    <a href="${pageContext.request.contextPath}/presupuestos/${presupuesto.id}/editar"
+                                       class="btn btn-warning">
+                                        ✏️ Editar
+                                    </a>
+                                </c:if>
+
+                                <!-- RECHAZAR (solo PENDIENTE) -->
+                                <c:if test="${presupuesto.estado == 'PENDIENTE'}">
                                     <form action="${pageContext.request.contextPath}/presupuestos/rechazar"
                                           method="post"
                                           onsubmit="return confirm('¿Rechazar este presupuesto?')">
-                                          <input type="hidden"
-                                         name="${_csrf.parameterName}"
-                                                                                                                                      value="${_csrf.token}"/>
-                                        <input type="hidden" name="id" value="${presupuesto.id}" />
-
-                                        <button type="submit" class="btn btn-outline-danger mr-2">
+                                        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                        <input type="hidden" name="id" value="${presupuesto.id}"/>
+                                        <button type="submit" class="btn btn-outline-danger">
                                             ❌ Rechazar
                                         </button>
                                     </form>
+                                </c:if>
 
-                            </c:if>
-                                <!-- Botón Imprimir PDF (para todos los estados) -->
+                                <!-- PDF (siempre visible) -->
                                 <a href="${pageContext.request.contextPath}/presupuestos/${presupuesto.id}/pdf"
-                                   class="btn btn-outline-secondary mr-2" target="_blank">
+                                   class="btn btn-outline-secondary"
+                                   target="_blank">
                                     📄 Descargar PDF
                                 </a>
+
                             </div>
                         </div>
                     </div>
@@ -227,7 +237,7 @@
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title">Aprobar Presupuesto</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal"></button>
             </div>
             <form action="${pageContext.request.contextPath}/presupuestos/aprobar"
                   method="post">
@@ -263,7 +273,7 @@
                                     </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary"
-                            data-bs-dismiss="modal">Cancelar</button>
+                            data-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-success">
                         ✅ Confirmar Aprobación
                     </button>
@@ -280,5 +290,6 @@
                 </div>
             </div>
         </footer>
-</body>
+        <jsp:include page="/WEB-INF/jsp/foot.jsp"/>
+        </body>
 </html>

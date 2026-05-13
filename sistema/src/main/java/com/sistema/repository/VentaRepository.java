@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface VentaRepository extends JpaRepository<Venta, Long> {
 
@@ -44,5 +45,8 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
             @Param("finMes") LocalDateTime finMes,
             @Param("estado") Venta.Estado estado
     );
+
+    @Query("SELECT v FROM Venta v WHERE v.presupuestoCodigo = :codigo")
+    List<Venta> findAllByPresupuestoCodigo(@Param("codigo") String codigo);
 }
 

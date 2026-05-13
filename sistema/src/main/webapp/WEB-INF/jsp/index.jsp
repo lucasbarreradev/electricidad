@@ -204,7 +204,7 @@
 </div>
 
 </div>
-
+<jsp:include page="/WEB-INF/jsp/foot.jsp"/>
 </body>
 
 </html>

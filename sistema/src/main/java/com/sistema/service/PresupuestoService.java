@@ -20,15 +20,21 @@ public class PresupuestoService {
     private final ProductoRepository productoRepo;
     private final ClienteRepository clienteRepo;
     private final VentaService ventaService;
+    private final VentaRepository ventaRepo;
+    private final MovimientoInventarioService movimientoService;
 
     public PresupuestoService(PresupuestoRepository presupuestoRepo,
                               ProductoRepository productoRepo,
                               ClienteRepository clienteRepo,
-                              VentaService ventaService) {
+                              VentaService ventaService,
+                              VentaRepository ventaRepo,
+                              MovimientoInventarioService movimientoService) {
         this.presupuestoRepo = presupuestoRepo;
         this.productoRepo = productoRepo;
         this.clienteRepo = clienteRepo;
         this.ventaService = ventaService;
+        this.ventaRepo = ventaRepo;
+        this.movimientoService = movimientoService;
     }
 
     // ==========================================
@@ -202,9 +208,8 @@ public class PresupuestoService {
     // BUSCAR
     // ==========================================
     public Presupuesto buscarPorId(Long id) {
-        return presupuestoRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Presupuesto no encontrado"));
+        return presupuestoRepo.findByIdConDetalles(id)
+                .orElseThrow(() -> new IllegalArgumentException("Presupuesto no encontrado"));
     }
 
     public Presupuesto buscarPorCodigo(String codigo) {
@@ -245,9 +250,16 @@ public class PresupuestoService {
 
         Presupuesto presupuesto = buscarPorId(id);
 
-        if (presupuesto.getEstado() != EstadoPresupuesto.PENDIENTE) {
+        if (presupuesto.getEstado() != EstadoPresupuesto.PENDIENTE &&
+                presupuesto.getEstado() != EstadoPresupuesto.APROBADO) {
             throw new IllegalArgumentException(
-                    "Solo se puede editar un presupuesto PENDIENTE");
+                    "Solo se puede editar un presupuesto PENDIENTE o APROBADO");
+        }
+
+        // Si estaba aprobado → anular venta y volver a pendiente
+        if (presupuesto.getEstado() == EstadoPresupuesto.APROBADO) {
+            anularVentaDelPresupuesto(presupuesto);
+            presupuesto.setEstado(EstadoPresupuesto.PENDIENTE);
         }
 
         // Actualizar cliente
@@ -255,27 +267,27 @@ public class PresupuestoService {
             Cliente cliente = clienteRepo.findById(clienteId)
                     .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado"));
             presupuesto.setCliente(cliente);
+        } else {
+            presupuesto.setCliente(null);
         }
 
-        // Limpiar detalles
+        presupuesto.setFormaPago(formaPago);
         presupuesto.getDetalles().clear();
+        presupuestoRepo.saveAndFlush(presupuesto);
 
-        // Agregar nuevos detalles
         for (int i = 0; i < productoIds.size(); i++) {
 
             Producto producto = productoRepo.findById(productoIds.get(i))
-                    .orElseThrow(() ->
-                            new IllegalArgumentException("Producto no encontrado"));
+                    .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado"));
 
             Integer cantidad = cantidades.get(i);
+            if (cantidad == null || cantidad <= 0) continue;
 
             BigDecimal descuento = (descuentos != null && i < descuentos.size())
                     ? descuentos.get(i)
                     : BigDecimal.ZERO;
 
-            BigDecimal precio = producto.getPrecioSegunFormaPago(
-                    presupuesto.getFormaPago()
-            );
+            BigDecimal precio = producto.getPrecioSegunFormaPago(formaPago);
 
             DetallePresupuesto detalle = new DetallePresupuesto();
             detalle.setProducto(producto);
@@ -285,14 +297,33 @@ public class PresupuestoService {
             detalle.setAlicuotaIva(producto.getTipoIva().getPorcentaje());
             detalle.calcularSubtotal();
 
-            presupuesto.setFormaPago(formaPago);
             presupuesto.agregarDetalle(detalle);
         }
-
 
         presupuesto.calcularTotal();
 
         return presupuestoRepo.save(presupuesto);
+    }
+
+    // ==========================================
+// ANULAR VENTA ASOCIADA
+// ==========================================
+    private void anularVentaDelPresupuesto(Presupuesto presupuesto) {
+        List<Venta> ventas = ventaRepo.findAllByPresupuestoCodigo(presupuesto.getCodigo());
+
+        for (Venta venta : ventas) {
+            if (venta.getEstado() == Venta.Estado.COMPLETADA) {
+                for (VentaItem item : venta.getItems()) {
+                    movimientoService.registrarDevolucion(
+                            item.getProducto().getId(),
+                            item.getCantidad(),
+                            "Anulación por edición de presupuesto " + presupuesto.getCodigo()
+                    );
+                }
+                venta.setEstado(Venta.Estado.ANULADA);
+                ventaRepo.save(venta);
+            }
+        }
     }
 
 

@@ -160,25 +160,26 @@ public class PresupuestoController {
     }
 
     // ==========================================
-    // FORM EDITAR (solo PENDIENTE)
+    // FORM EDITAR
     // ==========================================
     @GetMapping("/{id}/editar")
     public String editar(@PathVariable Long id,
                          Model model,
                          RedirectAttributes ra) {
-
         try {
             Presupuesto presupuesto = presupuestoService.buscarPorId(id);
 
-            if (presupuesto.getEstado() != EstadoPresupuesto.PENDIENTE) {
+            if (presupuesto.getEstado() != EstadoPresupuesto.PENDIENTE &&
+                    presupuesto.getEstado() != EstadoPresupuesto.APROBADO) {
                 ra.addFlashAttribute("error",
-                        "Solo se puede editar un presupuesto PENDIENTE");
-                return "redirect:/presupuestos/" + id;
+                        "Solo se puede editar un presupuesto PENDIENTE o APROBADO");
+                return "redirect:/presupuestos/detalle/" + id;
             }
 
             model.addAttribute("presupuesto", presupuesto);
             model.addAttribute("productos", productoRepo.findAll());
             model.addAttribute("clientes", clienteRepo.findAll());
+
             return "presupuesto/form";
 
         } catch (Exception e) {
@@ -201,9 +202,11 @@ public class PresupuestoController {
             RedirectAttributes ra) {
 
         try {
-            presupuestoService.actualizar(id, clienteId, productoIds, cantidades, descuentos, formaPago);
+            presupuestoService.actualizar(
+                    id, clienteId, productoIds, cantidades, descuentos, formaPago);
+
             ra.addFlashAttribute("mensaje", "Presupuesto actualizado exitosamente");
-            return "redirect:/presupuestos/" + id;
+            return "redirect:/presupuestos/detalle/" + id;
 
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
