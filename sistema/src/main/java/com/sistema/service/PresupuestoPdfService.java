@@ -124,6 +124,10 @@ public class PresupuestoPdfService {
         rightCell.setBorder(Rectangle.NO_BORDER);
         rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
+        String validoHasta = p.getFechaValidez() != null
+                ? p.getFechaValidez().format(DATE_FMT)
+                : p.getFecha().plusDays(30).format(DATE_FMT);
+
         Paragraph info = new Paragraph();
         info.setAlignment(Element.ALIGN_RIGHT);
         info.add(new Chunk("Presupuesto n°:\n", normal));
@@ -131,13 +135,13 @@ public class PresupuestoPdfService {
         info.add(new Chunk("Fecha de emisión:\n", normal));
         info.add(new Chunk(p.getFecha().format(DATE_FMT) + "\n", bold));
         info.add(new Chunk("Válido hasta:\n", normal));
-        info.add(new Chunk(p.getFecha().plusDays(30).format(DATE_FMT), bold));
+        info.add(new Chunk(validoHasta, bold));
 
         rightCell.addElement(info);
         table.addCell(rightCell);
 
         document.add(table);
-        document.add(new Paragraph(" ")); // Espacio
+        document.add(new Paragraph(" "));
     }
 
     // ==========================================
@@ -183,8 +187,12 @@ public class PresupuestoPdfService {
         cell3.setBorder(Rectangle.NO_BORDER);
         cell3.setPadding(8);
         Paragraph p3 = new Paragraph();
+        String validoHasta = p.getFechaValidez() != null
+                ? p.getFechaValidez().format(DATE_FMT)
+                : p.getFecha().plusDays(30).format(DATE_FMT);
+
         p3.add(new Chunk("Válido hasta:\n", whiteSmall));
-        p3.add(new Chunk(p.getFecha().plusDays(30).format(DATE_FMT), white));
+        p3.add(new Chunk(validoHasta, white));
         cell3.addElement(p3);
         table.addCell(cell3);
 

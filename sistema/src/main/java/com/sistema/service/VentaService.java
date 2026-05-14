@@ -148,21 +148,15 @@ public class VentaService {
                     "Solo se puede vender un presupuesto PENDIENTE");
         }
 
-        // ==========================
-        // Crear venta
-        // ==========================
         Venta venta = new Venta(
                 generarCodigoVenta(),
                 p.getCliente(),
                 Venta.Origen.PRESUPUESTO,
                 formaPago,
-                p.getCodigo(), // ✅ código presupuesto
+                p.getCodigo(),
                 "Generada desde presupuesto " + p.getCodigo()
         );
 
-        // ==========================
-        // Items
-        // ==========================
         for (DetallePresupuesto dp : p.getDetalles()) {
 
             Producto producto = productoRepo.findById(
@@ -170,34 +164,17 @@ public class VentaService {
             ).orElseThrow(() ->
                     new IllegalArgumentException("Producto no encontrado"));
 
-            BigDecimal precio;
-
-            switch (venta.getFormaPago()) {
-                case CONTADO:
-                    precio = producto.getPrecioContado();
-                    break;
-                case TARJETA:
-                    precio = producto.getPrecioTarjeta();
-                    break;
-                case CUENTA_CORRIENTE:
-                    precio = producto.getPrecioCuentaCorriente();
-                    break;
-                default:
-                    throw new RuntimeException("Forma de pago inválida");
-            }
+            BigDecimal precio = dp.getPrecioUnitario();
 
             if (precio == null) {
-                throw new IllegalStateException("El producto no tiene precio configurado");
+                throw new IllegalStateException(
+                        "El detalle del presupuesto no tiene precio configurado");
             }
 
             VentaItem item = new VentaItem();
-
-            // Snapshot del precio actual
-            item.setPrecioUnitario(precio);
-
+            item.setPrecioUnitario(precio); // ← precio del presupuesto
             item.setProducto(producto);
             item.setCantidad(dp.getCantidad());
-
             item.setCostoUnitario(
                     producto.getPrecioCompra() != null
                             ? producto.getPrecioCompra()
@@ -205,8 +182,6 @@ public class VentaService {
             );
             item.setDescuentoPct(dp.getDescuentoPct());
             item.setAlicuotaIva(producto.getTipoIva().getPorcentaje());
-
-
             item.calcularSubtotal();
 
             venta.agregarItem(item);
@@ -218,18 +193,10 @@ public class VentaService {
             );
         }
 
-
         venta.calcularTotales();
-
-        // ==========================
-        // Guardar venta
-        // ==========================
         venta.setEstado(Venta.Estado.COMPLETADA);
         Venta ventaGuardada = ventaRepo.save(venta);
 
-        // ==========================
-        // Cambiar estado presupuesto
-        // ==========================
         p.setEstado(EstadoPresupuesto.VENDIDO);
         presupuestoRepo.save(p);
 

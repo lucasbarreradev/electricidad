@@ -6,6 +6,7 @@ import com.sistema.service.PresupuestoPdfService;
 import com.sistema.service.PresupuestoService;
 import com.sistema.service.RemitoService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +14,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -85,22 +87,20 @@ public class PresupuestoController {
             @RequestParam List<Long> productoIds,
             @RequestParam List<Integer> cantidades,
             @RequestParam(required = false) List<BigDecimal> descuentos,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaValidez,
             RedirectAttributes ra
     ) {
-
         try {
-
             Presupuesto presupuesto = presupuestoService.crear(
                     clienteId,
                     formaPago,
                     productoIds,
                     cantidades,
-                    descuentos
+                    descuentos,
+                    fechaValidez
             );
 
             ra.addFlashAttribute("mensaje", "Presupuesto creado: " + presupuesto.getCodigo());
-
-            // 👇 CLAVE: mandamos el ID para abrir el PDF después
             return "redirect:/presupuestos/detalle/" + presupuesto.getId() + "?pdf=true";
 
         } catch (Exception e) {
@@ -139,6 +139,14 @@ public class PresupuestoController {
 
         model.addAttribute("fechaPresupuestoFmt",
                 presupuesto.getFecha().format(formatter));
+
+        if (presupuesto.getFechaValidez() != null) {
+            model.addAttribute("fechaValidezFmt",
+                    presupuesto.getFechaValidez().format(formatter));
+        } else {
+            model.addAttribute("fechaValidezFmt",
+                    presupuesto.getFecha().plusDays(30).format(formatter));
+        }
 
         return "presupuesto/detallePresupuesto";
     }
@@ -198,12 +206,16 @@ public class PresupuestoController {
             @RequestParam List<Long> productoIds,
             @RequestParam List<Integer> cantidades,
             @RequestParam(required = false) List<BigDecimal> descuentos,
+            @RequestParam(required = false) List<BigDecimal> precios,
+            @RequestParam(required = false) List<Long> actualizarPrecioProducto,
             @RequestParam FormaPago formaPago,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaValidez, // ← AGREGAR
             RedirectAttributes ra) {
 
         try {
             presupuestoService.actualizar(
-                    id, clienteId, productoIds, cantidades, descuentos, formaPago);
+                    id, clienteId, productoIds, cantidades,
+                    descuentos, precios, formaPago, fechaValidez); // ← AGREGAR
 
             ra.addFlashAttribute("mensaje", "Presupuesto actualizado exitosamente");
             return "redirect:/presupuestos/detalle/" + id;

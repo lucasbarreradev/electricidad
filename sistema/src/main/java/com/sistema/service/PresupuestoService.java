@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +45,8 @@ public class PresupuestoService {
                              FormaPago formaPago,
                              List<Long> productoIds,
                              List<Integer> cantidades,
-                             List<BigDecimal> descuentos) {
+                             List<BigDecimal> descuentos,
+                             LocalDate fechaValidez) {
 
         // Validaciones
         if (productoIds == null || productoIds.isEmpty()) {
@@ -70,6 +72,9 @@ public class PresupuestoService {
         presupuesto.setFecha(LocalDateTime.now());
         presupuesto.setFormaPago(formaPago);
 
+        presupuesto.setFechaValidez(
+                fechaValidez != null ? fechaValidez : LocalDate.now().plusDays(30)
+        );
 
         // Agregar detalles
         for (int i = 0; i < productoIds.size(); i++) {
@@ -235,7 +240,7 @@ public class PresupuestoService {
     // ==========================================
     private String generarCodigo() {
         Long ultimo = presupuestoRepo.count();
-        return String.format("PRES-%04d", ultimo + 1);
+        return String.format("%04d", ultimo + 1);
     }
 
     // ==========================================
@@ -246,7 +251,9 @@ public class PresupuestoService {
                                   List<Long> productoIds,
                                   List<Integer> cantidades,
                                   List<BigDecimal> descuentos,
-                                  FormaPago formaPago) {
+                                  List<BigDecimal> precios,
+                                  FormaPago formaPago,
+                                  LocalDate fechaValidez) {
 
         Presupuesto presupuesto = buscarPorId(id);
 
@@ -256,13 +263,11 @@ public class PresupuestoService {
                     "Solo se puede editar un presupuesto PENDIENTE o APROBADO");
         }
 
-        // Si estaba aprobado → anular venta y volver a pendiente
         if (presupuesto.getEstado() == EstadoPresupuesto.APROBADO) {
             anularVentaDelPresupuesto(presupuesto);
             presupuesto.setEstado(EstadoPresupuesto.PENDIENTE);
         }
 
-        // Actualizar cliente
         if (clienteId != null) {
             Cliente cliente = clienteRepo.findById(clienteId)
                     .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado"));
@@ -273,6 +278,9 @@ public class PresupuestoService {
 
         presupuesto.setFormaPago(formaPago);
         presupuesto.getDetalles().clear();
+        if (fechaValidez != null) {
+            presupuesto.setFechaValidez(fechaValidez);
+        }
         presupuestoRepo.saveAndFlush(presupuesto);
 
         for (int i = 0; i < productoIds.size(); i++) {
@@ -284,10 +292,14 @@ public class PresupuestoService {
             if (cantidad == null || cantidad <= 0) continue;
 
             BigDecimal descuento = (descuentos != null && i < descuentos.size())
-                    ? descuentos.get(i)
-                    : BigDecimal.ZERO;
+                    ? descuentos.get(i) : BigDecimal.ZERO;
 
-            BigDecimal precio = producto.getPrecioSegunFormaPago(formaPago);
+            BigDecimal precio;
+            if (precios != null && i < precios.size() && precios.get(i) != null) {
+                precio = precios.get(i);
+            } else {
+                precio = producto.getPrecioSegunFormaPago(formaPago);
+            }
 
             DetallePresupuesto detalle = new DetallePresupuesto();
             detalle.setProducto(producto);
@@ -301,7 +313,6 @@ public class PresupuestoService {
         }
 
         presupuesto.calcularTotal();
-
         return presupuestoRepo.save(presupuesto);
     }
 

@@ -46,6 +46,7 @@ public class RemitoService {
         remito.setObservaciones(observaciones);
         remito.setIncluyePrecios(incluyePrecios);
         remito.setEstado(Remito.Estado.PENDIENTE);
+        remito.setCodigo(generarCodigo());
 
         for (int i = 0; i < productoIds.size(); i++) {
             Producto pt = productoRepo.findById(productoIds.get(i))
@@ -232,6 +233,7 @@ public class RemitoService {
         remito.setTipo(Remito.Tipo.ENTREGA);
         remito.setIncluyePrecios(true);
         remito.setObservaciones("Generado desde venta " + venta.getCodigo());
+        remito.setCodigo(generarCodigo());
 
         BigDecimal total = BigDecimal.ZERO;
 
@@ -252,6 +254,12 @@ public class RemitoService {
         Remito remitoGuardado = remitoRepo.save(remito);
 
         return remitoGuardado;
+    }
+
+    private String generarCodigo() {
+        Long maxId = remitoRepo.findMaxId();
+        long siguiente = (maxId != null ? maxId : 0L) + 1;
+        return String.format("%04d", siguiente);
     }
 
     public Remito buscarPorVentaId(Long ventaId) {

@@ -3,6 +3,7 @@ package com.sistema.repository;
 import com.sistema.model.Remito;
 import com.sistema.model.Venta;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
@@ -24,4 +25,7 @@ public interface RemitoRepository extends JpaRepository<Remito, Long> {
             Remito.Estado estado,
             Remito.Tipo tipo
     );
+
+    @Query("SELECT MAX(r.id) FROM Remito r")
+    Long findMaxId();
 }

@@ -187,6 +187,24 @@
 
                                     <hr>
 
+                                    <hr>
+
+                                    <!-- VÁLIDO HASTA -->
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">
+                                            <small class="badge bg-info text-dark">Paso 2</small>
+                                            📅 Válido hasta
+                                        </label>
+                                        <input type="date"
+                                               name="fechaValidez"
+                                               id="fechaValidez"
+                                               class="form-control"
+                                               value="${not empty presupuesto.fechaValidez ? presupuesto.fechaValidez : ''}">
+                                        <small class="text-muted">Dejá vacío para 30 días por defecto</small>
+                                    </div>
+
+                                    <hr>
+
                                     <!-- RESUMEN -->
                                     <div class="mb-3">
                                         <small class="text-muted">Productos agregados:</small>
@@ -290,7 +308,8 @@ const itemsExistentes = [
         precioContado: ${not empty detalle.producto.precioContado ? detalle.producto.precioContado : 0},
         precioTarjeta: ${not empty detalle.producto.precioTarjeta ? detalle.producto.precioTarjeta : 0},
         precioCC: ${not empty detalle.producto.precioCuentaCorriente ? detalle.producto.precioCuentaCorriente : 0},
-        descuento: ${not empty detalle.descuentoPct ? detalle.descuentoPct : 0}
+        descuento: ${not empty detalle.descuentoPct ? detalle.descuentoPct : 0},
+        precioManual: ${not empty detalle.precioUnitario ? detalle.precioUnitario : 0} // ← precio guardado
     }<c:if test="${!status.last}">,</c:if>
     </c:forEach>
 ];
@@ -323,7 +342,8 @@ if (itemsExistentes && itemsExistentes.length > 0) {
         precioContado: parseFloat(i.precioContado),
         precioTarjeta: parseFloat(i.precioTarjeta),
         precioCC: parseFloat(i.precioCC),
-        descuento: parseFloat(i.descuento)
+        descuento: parseFloat(i.descuento),
+        precioManual: parseFloat(i.precioManual) // ← precio guardado en el detalle
     }));
     renderTabla();
     actualizarPreciosFinal();
@@ -407,11 +427,12 @@ function renderTabla() {
     }
 
     items.forEach((item, index) => {
-        let precio = item.precioContado;
         let formaPago = document.getElementById("formaPago").value;
 
-        if (formaPago === "TARJETA") precio = item.precioTarjeta;
-        else if (formaPago === "CUENTA_CORRIENTE") precio = item.precioCC;
+        let precio = item.precioManual != null ? item.precioManual
+                   : formaPago === "TARJETA" ? item.precioTarjeta
+                   : formaPago === "CUENTA_CORRIENTE" ? item.precioCC
+                   : item.precioContado;
 
         let subtotal = item.cantidad * precio * (1 - item.descuento / 100);
 
@@ -419,7 +440,6 @@ function renderTabla() {
             "<tr>" +
                 "<td><strong>" + item.descripcion + "</strong></td>" +
                 "<td class='text-center'>" +
-                    // Botones para editar cantidad directamente
                     "<div class='input-group input-group-sm' style='width: 100px; margin: auto;'>" +
                         "<button type='button' class='btn btn-outline-secondary btn-sm' onclick='cambiarCantidad(" + index + ", -1)'>-</button>" +
                         "<input type='number' class='form-control text-center' value='" + item.cantidad + "' " +
@@ -427,8 +447,15 @@ function renderTabla() {
                         "<button type='button' class='btn btn-outline-secondary btn-sm' onclick='cambiarCantidad(" + index + ", 1)'>+</button>" +
                     "</div>" +
                 "</td>" +
-                "<td class='text-end'>$" + precio.toFixed(2) + "</td>" +
-                "<td class='text-center'>" +
+                // ← PRECIO EDITABLE
+                "<td class='text-end' style='width: 170px;'>" +
+                    "<div class='input-group input-group-sm' style='width: 150px; margin-left: auto;'>" +
+                        "<span class='input-group-text'>$</span>" +
+                        "<input type='number' class='form-control text-end' value='" + precio.toFixed(2) + "' " +
+                            "min='0' step='0.01' onchange='setPrecio(" + index + ", this.value)' style='width: 70px;'>" +
+                    "</div>" +
+                "</td>" +
+                "<td class='text-center' style='width: 80px;'>" +
                     (item.descuento > 0 ? item.descuento + "%" : "-") +
                 "</td>" +
                 "<td class='text-end fw-semibold'>$" + subtotal.toFixed(2) + "</td>" +
@@ -440,7 +467,8 @@ function renderTabla() {
         hidden.innerHTML +=
             "<input type='hidden' name='productoIds' value='" + item.productoId + "'>" +
             "<input type='hidden' name='cantidades' value='" + item.cantidad + "'>" +
-            "<input type='hidden' name='descuentos' value='" + item.descuento + "'>";
+            "<input type='hidden' name='descuentos' value='" + item.descuento + "'>" +
+            "<input type='hidden' name='precios' value='" + precio.toFixed(2) + "'>";
     });
 
     document.getElementById("cantidadItems").textContent = items.length;
@@ -466,6 +494,14 @@ function setCantidad(index, valor) {
     actualizarPreciosFinal();
 }
 
+function setPrecio(index, valor) {
+    let nuevoPrecio = parseFloat(valor);
+    if (isNaN(nuevoPrecio) || nuevoPrecio < 0) return;
+    items[index].precioManual = nuevoPrecio;
+    renderTabla();
+    actualizarPreciosFinal();
+}
+
 // ==========================================
 // ELIMINAR ITEM
 // ==========================================
@@ -486,9 +522,11 @@ function actualizarPreciosFinal() {
     let totalFinal = 0;
 
     items.forEach(item => {
-        let precio = item.precioContado;
-        if (formaPago === "TARJETA") precio = item.precioTarjeta;
-        else if (formaPago === "CUENTA_CORRIENTE") precio = item.precioCC;
+        // Precio manual tiene prioridad
+        let precio = item.precioManual != null ? item.precioManual
+                   : formaPago === "TARJETA" ? item.precioTarjeta
+                   : formaPago === "CUENTA_CORRIENTE" ? item.precioCC
+                   : item.precioContado;
 
         totalFinal += item.cantidad * precio * (1 - item.descuento / 100);
         totalEfectivo += item.cantidad * item.precioContado * (1 - item.descuento / 100);
@@ -502,7 +540,6 @@ function actualizarPreciosFinal() {
     if (formaPago === "TARJETA") detalle = "Precio con tarjeta";
     else if (formaPago === "CUENTA_CORRIENTE") detalle = "Precio con cuenta corriente";
     else if (formaPago === "CONTADO") detalle = "Precio en efectivo";
-
     document.getElementById("detalleRecargo").textContent = detalle;
 
     renderTabla();

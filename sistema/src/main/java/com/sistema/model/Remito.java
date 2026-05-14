@@ -89,14 +89,11 @@ import java.util.List;
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 
-        @PrePersist
-        protected void onCreate() {
-            if (codigo == null) {
-                codigo = "REM-" + System.currentTimeMillis();
-            }
-            if (fechaEmision == null) {
-                fechaEmision = LocalDate.now();
-            }
+    @PrePersist
+    protected void onCreate() {
+        if (fechaEmision == null) {
+            fechaEmision = LocalDate.now();
         }
+    }
     }
 

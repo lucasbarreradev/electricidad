@@ -65,6 +65,20 @@
                                 </div>
 
                                 <div class="col-md-3">
+                                    <div class="text-muted">Válido hasta</div>
+                                    <div class="small">
+                                        <c:choose>
+                                            <c:when test="${not empty fechaValidezFmt}">
+                                                ${fechaValidezFmt}
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="text-muted">-</span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3">
                                     <div class="text-muted">Cliente</div>
                                     <div class="small">
                                         <c:choose>
