@@ -46,11 +46,11 @@ public class PresupuestoPdfService {
     }
 
     // ==========================================
-    // HEADER: Título + Logo + Empresa
-    // ==========================================
+// HEADER: Título + Logo + Empresa
+// ==========================================
     private void agregarHeader(Document document, Presupuesto p) throws Exception {
-        Font titulo = FontFactory.getFont(FontFactory.HELVETICA, 20, Font.BOLD);
-        Font empresaFont = FontFactory.getFont(FontFactory.HELVETICA, 10, Font.NORMAL, BaseColor.GRAY);
+        Font titulo = FontFactory.getFont(FontFactory.HELVETICA, 16, Font.BOLD); // ← más chico
+        Font empresaFont = FontFactory.getFont(FontFactory.HELVETICA, 8, Font.NORMAL, BaseColor.GRAY); // ← más chico
 
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(100);
@@ -60,22 +60,21 @@ public class PresupuestoPdfService {
         PdfPCell tituloCell = new PdfPCell(new Phrase("Presupuesto", titulo));
         tituloCell.setBorder(Rectangle.NO_BORDER);
         tituloCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        tituloCell.setPaddingTop(0);
+        tituloCell.setPadding(0); // ← sin padding
         table.addCell(tituloCell);
 
-        // LOGO (derecha)
+        // LOGO
         try {
             Image logo = Image.getInstance(getClass().getResource("/static/img/LOGO.jpg"));
-            logo.scaleToFit(400, 200);
+            logo.scaleToFit(340, 140);
 
             PdfPCell logoCell = new PdfPCell(logo);
             logoCell.setBorder(Rectangle.NO_BORDER);
             logoCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-            logoCell.setPaddingTop(0); //
+            logoCell.setPadding(0);
             table.addCell(logoCell);
         } catch (Exception e) {
-            // Si no encuentra logo, celda vacía
             PdfPCell empty = new PdfPCell();
             empty.setBorder(Rectangle.NO_BORDER);
             table.addCell(empty);
@@ -83,39 +82,51 @@ public class PresupuestoPdfService {
 
         document.add(table);
 
-        // DATOS EMPRESA (gris, debajo del título)
+        // DATOS EMPRESA
         Paragraph empresa = new Paragraph(
-                "MOBEZA ELECTRICIDAD, Acceso Norte, S/N, 2681 Etruria, Argentina",
+                "MOBEZA ELECTRICIDAD · Acceso Norte S/N · 2681 Etruria, Argentina",
                 empresaFont
         );
-        empresa.setSpacingAfter(10);
+        empresa.setSpacingAfter(4);
         document.add(empresa);
     }
 
     // ==========================================
-    // DATOS CLIENTE (PARA)
-    // ==========================================
+// DATOS CLIENTE (PARA)
+// ==========================================
     private void agregarDatosCliente(Document document, Presupuesto p) throws Exception {
-        Font bold = FontFactory.getFont(FontFactory.HELVETICA, 10, Font.BOLD);
-        Font normal = FontFactory.getFont(FontFactory.HELVETICA, 10);
+        Font bold = FontFactory.getFont(FontFactory.HELVETICA, 9, Font.BOLD);
+        Font normal = FontFactory.getFont(FontFactory.HELVETICA, 9);
 
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(100);
         table.setWidths(new int[]{50, 50});
+        table.setSpacingBefore(2);
 
         // COLUMNA IZQUIERDA: Cliente
         PdfPCell leftCell = new PdfPCell();
         leftCell.setBorder(Rectangle.NO_BORDER);
+        leftCell.setPadding(2);
 
         Paragraph para = new Paragraph();
-        para.add(new Chunk("PARA\n", bold));
+        para.add(new Chunk("PARA: ", bold));
 
-        String clienteInfo = p.getCliente() != null
-                ? p.getCliente().getNombre() + " " + p.getCliente().getApellido() + "\n" +
-                (p.getCliente().getDireccion() != null ? p.getCliente().getDireccion() + "\n" : "")
-                : "Consumidor Final\n";
+        String clienteNombre = p.getCliente() != null
+                ? p.getCliente().getNombre() + " " + p.getCliente().getApellido()
+                + (p.getCliente().getDireccion() != null
+                ? " · " + p.getCliente().getDireccion()
+                : "")
+                : "Consumidor Final";
 
-        para.add(new Chunk(clienteInfo, normal));
+        para.add(new Chunk(clienteNombre + "\n", normal));
+
+        // ← AGREGAR DNI
+        if (p.getCliente() != null && p.getCliente().getDni() != null
+                && !p.getCliente().getDni().isEmpty()) {
+            para.add(new Chunk("CUIT: ", bold));
+            para.add(new Chunk(p.getCliente().getDni() + "\n", normal));
+        }
+
         leftCell.addElement(para);
         table.addCell(leftCell);
 
@@ -123,6 +134,7 @@ public class PresupuestoPdfService {
         PdfPCell rightCell = new PdfPCell();
         rightCell.setBorder(Rectangle.NO_BORDER);
         rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        rightCell.setPadding(2);
 
         String validoHasta = p.getFechaValidez() != null
                 ? p.getFechaValidez().format(DATE_FMT)
@@ -130,40 +142,40 @@ public class PresupuestoPdfService {
 
         Paragraph info = new Paragraph();
         info.setAlignment(Element.ALIGN_RIGHT);
-        info.add(new Chunk("Presupuesto n°:\n", normal));
-        info.add(new Chunk(p.getCodigo() + "\n", bold));
-        info.add(new Chunk("Fecha de emisión:\n", normal));
-        info.add(new Chunk(p.getFecha().format(DATE_FMT) + "\n", bold));
-        info.add(new Chunk("Válido hasta:\n", normal));
-        info.add(new Chunk(validoHasta, bold));
+        info.add(new Chunk("N°: ", normal));
+        info.add(new Chunk(p.getCodigo() + "   ", bold));
+        info.add(new Chunk("Emisión: ", normal));
+        info.add(new Chunk(p.getFecha().format(DATE_FMT) + "   ", bold));
+        info.add(new Chunk("Válido hasta: ", normal));
+        info.add(new Chunk(validoHasta + "\n", bold));
 
         rightCell.addElement(info);
         table.addCell(rightCell);
 
         document.add(table);
-        document.add(new Paragraph(" "));
+        document.add(new Paragraph(" ", FontFactory.getFont(FontFactory.HELVETICA, 4)));
     }
 
     // ==========================================
-    // CAJA AMARILLA CON INFO
-    // ==========================================
+// CAJA AMARILLA
+// ==========================================
     private void agregarCajaInfo(Document document, Presupuesto p) throws Exception {
-        Font white = FontFactory.getFont(FontFactory.HELVETICA, 9, Font.BOLD, BaseColor.WHITE);
-        Font whiteSmall = FontFactory.getFont(FontFactory.HELVETICA, 8, Font.NORMAL, BaseColor.WHITE);
+        Font white = FontFactory.getFont(FontFactory.HELVETICA, 8, Font.BOLD, BaseColor.WHITE);   // ← más chico
+        Font whiteSmall = FontFactory.getFont(FontFactory.HELVETICA, 7, Font.NORMAL, BaseColor.WHITE); // ← más chico
 
         BaseColor amarillo = new BaseColor(218, 198, 125);
 
         PdfPTable table = new PdfPTable(4);
         table.setWidthPercentage(100);
         table.setWidths(new int[]{25, 25, 25, 25});
-        table.setSpacingBefore(10);
-        table.setSpacingAfter(15);
+        table.setSpacingBefore(4);
+        table.setSpacingAfter(8);
 
         // Presupuesto n°
         PdfPCell cell1 = new PdfPCell();
         cell1.setBackgroundColor(amarillo);
         cell1.setBorder(Rectangle.NO_BORDER);
-        cell1.setPadding(8);
+        cell1.setPadding(5);
         Paragraph p1 = new Paragraph();
         p1.add(new Chunk("Presupuesto n°:\n", whiteSmall));
         p1.add(new Chunk(p.getCodigo(), white));
@@ -174,7 +186,7 @@ public class PresupuestoPdfService {
         PdfPCell cell2 = new PdfPCell();
         cell2.setBackgroundColor(amarillo);
         cell2.setBorder(Rectangle.NO_BORDER);
-        cell2.setPadding(8);
+        cell2.setPadding(5);
         Paragraph p2 = new Paragraph();
         p2.add(new Chunk("Fecha de emisión:\n", whiteSmall));
         p2.add(new Chunk(p.getFecha().format(DATE_FMT), white));
@@ -185,12 +197,11 @@ public class PresupuestoPdfService {
         PdfPCell cell3 = new PdfPCell();
         cell3.setBackgroundColor(amarillo);
         cell3.setBorder(Rectangle.NO_BORDER);
-        cell3.setPadding(8);
+        cell3.setPadding(5);
         Paragraph p3 = new Paragraph();
         String validoHasta = p.getFechaValidez() != null
                 ? p.getFechaValidez().format(DATE_FMT)
                 : p.getFecha().plusDays(30).format(DATE_FMT);
-
         p3.add(new Chunk("Válido hasta:\n", whiteSmall));
         p3.add(new Chunk(validoHasta, white));
         cell3.addElement(p3);
@@ -200,24 +211,10 @@ public class PresupuestoPdfService {
         PdfPCell cell4 = new PdfPCell();
         cell4.setBackgroundColor(amarillo);
         cell4.setBorder(Rectangle.NO_BORDER);
-        cell4.setPadding(8);
+        cell4.setPadding(5);
         Paragraph p4 = new Paragraph();
-        p4.add(new Chunk("Total a pagar\n", whiteSmall));
-
-        // Total final ya incluye IVA, si es consumidor final no discriminamos
-        boolean esConsumidorFinal = p.getCliente() == null ||
-                p.getCliente().getCondicionIva() == CondicionIva.CONSUMIDOR_FINAL;
-
-        BigDecimal totalFinal = p.getTotal();
-
-        if (esConsumidorFinal) {
-            // consumidor final: todo va en total, no mostramos IVA
-            p4.add(new Chunk("$ " + DF.format(totalFinal), white));
-        } else {
-            // clientes que no son consumidor final: total con IVA incluido
-            p4.add(new Chunk("$ " + DF.format(totalFinal), white));
-        }
-
+        p4.add(new Chunk("Total a pagar:\n", whiteSmall));
+        p4.add(new Chunk("$ " + DF.format(p.getTotal()), white));
         cell4.addElement(p4);
         table.addCell(cell4);
 
@@ -228,19 +225,18 @@ public class PresupuestoPdfService {
 // FORMA DE PAGO
 // ==========================================
     private void agregarFormaPago(Document document, Presupuesto p) throws Exception {
-
-        Font bold = FontFactory.getFont(FontFactory.HELVETICA, 10, Font.BOLD);
-        Font normal = FontFactory.getFont(FontFactory.HELVETICA, 10);
+        Font bold = FontFactory.getFont(FontFactory.HELVETICA, 9, Font.BOLD);
+        Font normal = FontFactory.getFont(FontFactory.HELVETICA, 9);
 
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(100);
-        table.setSpacingBefore(10);
-        table.setSpacingAfter(15);
+        table.setSpacingBefore(2);
+        table.setSpacingAfter(8);
         table.setWidths(new int[]{25, 75});
 
         PdfPCell label = new PdfPCell(new Phrase("Forma de pago:", bold));
         label.setBorder(Rectangle.NO_BORDER);
-        label.setPadding(4);
+        label.setPadding(2);
         table.addCell(label);
 
         String formaPago = p.getFormaPago() != null
@@ -249,7 +245,7 @@ public class PresupuestoPdfService {
 
         PdfPCell value = new PdfPCell(new Phrase(formaPago, normal));
         value.setBorder(Rectangle.NO_BORDER);
-        value.setPadding(4);
+        value.setPadding(2);
         table.addCell(value);
 
         document.add(table);
@@ -264,7 +260,6 @@ public class PresupuestoPdfService {
         Font header = FontFactory.getFont(FontFactory.HELVETICA, 9, Font.BOLD);
         Font normal = FontFactory.getFont(FontFactory.HELVETICA, 9);
 
-        // Columnas: Descripción | Cant | Precio Unitario | IVA | Importe
         PdfPTable table = new PdfPTable(5);
         table.setWidthPercentage(100);
         table.setWidths(new int[]{45, 12, 18, 12, 13});
@@ -281,7 +276,7 @@ public class PresupuestoPdfService {
 
         for (DetallePresupuesto d : p.getDetalles()) {
 
-            BigDecimal subtotalConIva = d.getSubtotal(); // 👈 YA TIENE DESCUENTO
+            BigDecimal subtotalConIva = d.getSubtotal();
             BigDecimal cantidad = BigDecimal.valueOf(d.getCantidad());
 
             BigDecimal alicuotaIva = d.getAlicuotaIva() != null
@@ -300,7 +295,6 @@ public class PresupuestoPdfService {
 
             BigDecimal ivaItem = subtotalConIva.subtract(netoItem);
 
-            // Precio unitario neto (ya con descuento prorrateado)
             BigDecimal precioUnitarioNeto = netoItem.divide(
                     cantidad,
                     2,
@@ -364,7 +358,7 @@ public class PresupuestoPdfService {
 
         for (DetallePresupuesto d : p.getDetalles()) {
 
-            BigDecimal subtotalConIva = d.getSubtotal(); // 👈 YA TIENE DESCUENTO
+            BigDecimal subtotalConIva = d.getSubtotal();
             BigDecimal alicuotaIva = d.getAlicuotaIva() != null
                     ? d.getAlicuotaIva()
                     : BigDecimal.ZERO;

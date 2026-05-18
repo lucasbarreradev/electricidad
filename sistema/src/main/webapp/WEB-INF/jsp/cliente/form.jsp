@@ -73,7 +73,7 @@
                                 </div>
 
                                 <div class="col-md-6 mb-3">
-                                    <label>Dni</label>
+                                    <label>Dni / Cuit</label>
                                     <input type="text" name="dni"
                                            class="form-control"
                                            value="${cliente.dni}">
