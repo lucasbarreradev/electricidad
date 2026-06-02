@@ -108,8 +108,22 @@
                                                     ${p.fechaFormateada}
                                                 </td>
                                                 <td class="text-end">
-                                                    <strong>$<fmt:formatNumber value="${p.total}"
-                                                                               minFractionDigits="2"/></strong>
+
+                                                    <c:set var="esUSD" value="${p.moneda == 'USD'}"/>
+
+                                                    <c:set var="simboloMoneda"
+                                                           value="${esUSD ? 'U$D ' : '$ '}"/>
+
+                                                    <c:set var="tipoCambio"
+                                                           value="${not empty p.tipoCambio ? p.tipoCambio : 1}"/>
+
+                                                    <strong>
+                                                        ${simboloMoneda}
+                                                        <fmt:formatNumber
+                                                            value="${esUSD ? p.total / tipoCambio : p.total}"
+                                                            minFractionDigits="2"/>
+                                                    </strong>
+
                                                 </td>
                                                 <td class="text-center">
                                                     <span class="badge

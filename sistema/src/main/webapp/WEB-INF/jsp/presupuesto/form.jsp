@@ -123,14 +123,15 @@
                                             </td>
                                         </tr>
                                         </tbody>
+
                                         <tfoot class="table-secondary">
-                                        <tr>
-                                            <td colspan="4" class="fw-bold text-end">SUBTOTAL:</td>
-                                            <td class="text-end fw-bold fs-5 text-dark">
-                                                $<span id="subtotalEfectivo">0.00</span>
-                                            </td>
-                                            <td></td>
-                                        </tr>
+                                            <tr>
+                                                <td colspan="4" class="fw-bold text-end">SUBTOTAL:</td>
+                                                <td class="text-end fw-bold fs-5 text-dark">
+                                                    <span id="simboloSubtotal">$</span><span id="subtotalEfectivo">0.00</span>
+                                                </td>
+                                                <td></td>
+                                            </tr>
                                         </tfoot>
                                     </table>
                                 </div>
@@ -165,7 +166,7 @@
                                     <!-- CLIENTE -->
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">
-                                            <small class="badge bg-secondary">Paso 1</small>
+                                            <small class="badge bg-secondary text-dark">Paso 1</small>
                                             Cliente (opcional)
                                         </label>
                                         <input type="text"
@@ -222,6 +223,8 @@
 
                                     <hr>
 
+
+
                                     <!-- FORMA DE PAGO -->
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">
@@ -249,13 +252,58 @@
                                         </select>
                                     </div>
 
+                                    <hr>
+
+                                    <!-- MONEDA -->
+                                                                        <div class="mb-3">
+                                                                            <label class="form-label fw-semibold">
+                                                                                                                        <small class="badge bg-danger text-white">Paso 4</small>💱 Moneda</label>
+                                                                            <div class="btn-group w-100" role="group">
+                                                                                <input type="radio" class="btn-check" name="moneda"
+                                                                                       id="monedaARS" value="ARS"
+                                                                                       ${empty presupuesto || presupuesto.moneda == 'ARS' ? 'checked' : ''}
+                                                                                       onchange="cambiarMoneda('ARS')">
+                                                                                <label class="btn btn-outline-primary" for="monedaARS">
+                                                                                    🇦🇷 Pesos (ARS)
+                                                                                </label>
+
+                                                                                <input type="radio" class="btn-check" name="moneda"
+                                                                                       id="monedaUSD" value="USD"
+                                                                                       ${presupuesto.moneda == 'USD' ? 'checked' : ''}
+                                                                                       onchange="cambiarMoneda('USD')">
+                                                                                <label class="btn btn-outline-success" for="monedaUSD">
+                                                                                    🇺🇸 Dólares (USD)
+                                                                                </label>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <!-- TIPO DE CAMBIO (solo visible si USD) -->
+                                                                        <div class="mb-3" id="tipoCambioSection"
+                                                                             style="${presupuesto.moneda == 'USD' ? '' : 'display:none;'}">
+                                                                            <label class="form-label fw-semibold">💵 Tipo de cambio</label>
+                                                                            <div class="input-group">
+                                                                                <span class="input-group-text">$1 USD =</span>
+                                                                                <input type="number"
+                                                                                       id="tipoCambio"
+                                                                                       name="tipoCambio"
+                                                                                       class="form-control"
+                                                                                       step="0.01"
+                                                                                       min="1"
+                                                                                       value="${not empty presupuesto.tipoCambio ? presupuesto.tipoCambio : 1200}"
+                                                                                       oninput="recalcularPreciosUSD()">
+                                                                                <span class="input-group-text">ARS</span>
+                                                                            </div>
+                                                                            <small class="text-muted">Los precios se convierten automáticamente</small>
+                                                                        </div>
+
+                                                        <hr>
+
                                     <!-- TOTAL -->
                                     <div class="mb-4 p-3 bg-light rounded">
                                         <small class="text-muted">TOTAL A PRESUPUESTAR:</small>
                                         <div class="fs-2 fw-bold text-success">
-                                            $<span id="totalFinal">0.00</span>
+                                            <span id="simboloTotal">$</span><span id="totalFinal">0.00</span>
                                         </div>
-                                        <small class="text-muted" id="detalleRecargo"></small>
                                     </div>
 
                                     <div id="itemsHidden"></div>
@@ -323,6 +371,10 @@ const itemsExistentes = [];
 </c:if>
 
 <script>
+let monedaActual = '${not empty presupuesto.moneda ? presupuesto.moneda : "ARS"}';
+let simboloMoneda = monedaActual === 'USD' ? 'U$D ' : '$ ';
+let tipoCambio = ${not empty presupuesto.tipoCambio ? presupuesto.tipoCambio : 1200};
+
 let items = [];
 let productoSeleccionado = null;
 let clienteSeleccionado = null;
@@ -429,46 +481,41 @@ function renderTabla() {
     items.forEach((item, index) => {
         let formaPago = document.getElementById("formaPago").value;
 
-        let precio = item.precioManual != null ? item.precioManual
+        // Precio para MOSTRAR (en USD si aplica)
+        let precioBase = item.precioManual != null ? item.precioManual
                    : formaPago === "TARJETA" ? item.precioTarjeta
                    : formaPago === "CUENTA_CORRIENTE" ? item.precioCC
                    : item.precioContado;
 
-        let subtotal = item.cantidad * precio * (1 - item.descuento / 100);
+        let precioMostrar = monedaActual === 'USD'
+            ? parseFloat((precioBase / tipoCambio).toFixed(2))
+            : precioBase;
+
+        let subtotalMostrar = item.cantidad * precioMostrar * (1 - item.descuento / 100);
 
         tbody.innerHTML +=
             "<tr>" +
                 "<td><strong>" + item.descripcion + "</strong></td>" +
-                "<td class='text-center'>" +
-                    "<div class='input-group input-group-sm' style='width: 100px; margin: auto;'>" +
-                        "<button type='button' class='btn btn-outline-secondary btn-sm' onclick='cambiarCantidad(" + index + ", -1)'>-</button>" +
-                        "<input type='number' class='form-control text-center' value='" + item.cantidad + "' " +
-                            "min='1' onchange='setCantidad(" + index + ", this.value)' style='width: 45px;'>" +
-                        "<button type='button' class='btn btn-outline-secondary btn-sm' onclick='cambiarCantidad(" + index + ", 1)'>+</button>" +
-                    "</div>" +
+                "<td class='text-center'>..." +
                 "</td>" +
-                // ← PRECIO EDITABLE
                 "<td class='text-end' style='width: 170px;'>" +
                     "<div class='input-group input-group-sm' style='width: 150px; margin-left: auto;'>" +
-                        "<span class='input-group-text'>$</span>" +
-                        "<input type='number' class='form-control text-end' value='" + precio.toFixed(2) + "' " +
+                        "<span class='input-group-text'>" + simboloMoneda + "</span>" +
+                        "<input type='number' class='form-control text-end' value='" + precioMostrar.toFixed(2) + "' " +
                             "min='0' step='0.01' onchange='setPrecio(" + index + ", this.value)' style='width: 70px;'>" +
                     "</div>" +
                 "</td>" +
-                "<td class='text-center' style='width: 80px;'>" +
-                    (item.descuento > 0 ? item.descuento + "%" : "-") +
-                "</td>" +
-                "<td class='text-end fw-semibold'>$" + subtotal.toFixed(2) + "</td>" +
-                "<td class='text-center'>" +
-                    "<button type='button' class='btn btn-danger btn-sm' onclick='eliminarItem(" + index + ")'>✕</button>" +
-                "</td>" +
+                "<td class='text-center'>" + (item.descuento > 0 ? item.descuento + "%" : "-") + "</td>" +
+                "<td class='text-end fw-semibold'>" + simboloMoneda + subtotalMostrar.toFixed(2) + "</td>" +
+                "<td class='text-center'><button type='button' class='btn btn-danger btn-sm' onclick='eliminarItem(" + index + ")'>✕</button></td>" +
             "</tr>";
 
+        // Hidden siempre en ARS
         hidden.innerHTML +=
             "<input type='hidden' name='productoIds' value='" + item.productoId + "'>" +
             "<input type='hidden' name='cantidades' value='" + item.cantidad + "'>" +
             "<input type='hidden' name='descuentos' value='" + item.descuento + "'>" +
-            "<input type='hidden' name='precios' value='" + precio.toFixed(2) + "'>";
+            "<input type='hidden' name='precios' value='" + precioBase.toFixed(2) + "'>";
     });
 
     document.getElementById("cantidadItems").textContent = items.length;
@@ -495,11 +542,15 @@ function setCantidad(index, valor) {
 }
 
 function setPrecio(index, valor) {
-    let nuevoPrecio = parseFloat(valor);
-    if (isNaN(nuevoPrecio) || nuevoPrecio < 0) return;
-    items[index].precioManual = nuevoPrecio;
-    renderTabla();
-    actualizarPreciosFinal();
+let nuevoPrecio = parseFloat(valor);
+if (isNaN(nuevoPrecio) || nuevoPrecio < 0) return;
+// Si está en USD, convertir a ARS antes de guardar
+if (monedaActual === 'USD') {
+items[index].precioManual = parseFloat((nuevoPrecio * tipoCambio).toFixed(2));
+} else {
+items[index].precioManual = nuevoPrecio;
+}
+renderTabla(); actualizarPreciosFinal();
 }
 
 // ==========================================
@@ -518,34 +569,36 @@ function eliminarItem(index) {
 // ==========================================
 function actualizarPreciosFinal() {
     const formaPago = document.getElementById("formaPago").value;
-    let totalEfectivo = 0;
-    let totalFinal = 0;
+    let totalARS = 0;
 
     items.forEach(item => {
-        // Precio manual tiene prioridad
         let precio = item.precioManual != null ? item.precioManual
                    : formaPago === "TARJETA" ? item.precioTarjeta
                    : formaPago === "CUENTA_CORRIENTE" ? item.precioCC
                    : item.precioContado;
-
-        totalFinal += item.cantidad * precio * (1 - item.descuento / 100);
-        totalEfectivo += item.cantidad * item.precioContado * (1 - item.descuento / 100);
+        totalARS += item.cantidad * precio * (1 - item.descuento / 100);
     });
 
-    document.getElementById("subtotalEfectivo").textContent = totalEfectivo.toFixed(2);
-    document.getElementById("subtotalGeneral").textContent = totalEfectivo.toFixed(2);
-    document.getElementById("totalFinal").textContent = totalFinal.toFixed(2);
+    // Convertir a la moneda seleccionada para mostrar
+    let totalMostrar = monedaActual === 'USD'
+        ? parseFloat((totalARS / tipoCambio).toFixed(2))
+        : totalARS;
+
+    document.getElementById("simboloSubtotal").textContent = simboloMoneda;
+    document.getElementById("simboloTotal").textContent = simboloMoneda;
+    document.getElementById("subtotalEfectivo").textContent = totalMostrar.toFixed(2);
+    document.getElementById("subtotalGeneral").textContent = totalMostrar.toFixed(2);
+    document.getElementById("totalFinal").textContent = totalMostrar.toFixed(2);
 
     let detalle = "";
     if (formaPago === "TARJETA") detalle = "Precio con tarjeta";
     else if (formaPago === "CUENTA_CORRIENTE") detalle = "Precio con cuenta corriente";
     else if (formaPago === "CONTADO") detalle = "Precio en efectivo";
-    document.getElementById("detalleRecargo").textContent = detalle;
+
 
     renderTabla();
     verificarHabilitarBoton();
 }
-
 // ==========================================
 // VERIFICAR BOTÓN
 // ==========================================
@@ -709,6 +762,41 @@ document.addEventListener('click', function(e) {
         document.getElementById('resultadosCliente').innerHTML = '';
     }
 });
+
+function cambiarMoneda(moneda) {
+    monedaActual = moneda;
+    simboloMoneda = moneda === 'USD' ? 'U$D ' : '$ ';
+
+    // Mostrar/ocultar tipo de cambio
+    document.getElementById('tipoCambioSection').style.display =
+        moneda === 'USD' ? 'block' : 'none';
+
+    // Recalcular precios
+    recalcularPreciosUSD();
+    renderTabla();
+    actualizarPreciosFinal();
+}
+
+function recalcularPreciosUSD() {
+    tipoCambio = parseFloat(document.getElementById('tipoCambio').value) || 1;
+
+    if (monedaActual === 'USD') {
+        items.forEach(item => {
+            // Precio en USD para mostrar (se guarda en ARS en el hidden)
+            item.precioDisplay = parseFloat((item.precioContado / tipoCambio).toFixed(2));
+            item.precioManual = item.precioContado; // ← guarda ARS en BD
+        });
+    } else {
+        items.forEach(item => {
+            item.precioDisplay = null;
+            item.precioManual = null;
+        });
+    }
+
+    renderTabla();
+    actualizarPreciosFinal();
+}
+
 </script>
 
 <style>

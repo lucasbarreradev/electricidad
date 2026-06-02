@@ -55,6 +55,18 @@ public class Presupuesto {
     @Enumerated(EnumType.STRING)
     private FormaPago formaPago;
 
+    public enum Moneda {
+        ARS,
+        USD
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moneda", nullable = false, length = 3)
+    private Moneda moneda = Moneda.ARS;
+
+    @Column(name = "tipo_cambio", precision = 10, scale = 2)
+    private BigDecimal tipoCambio;
+
     public void agregarDetalle(DetallePresupuesto detalle) {
         detalle.setPresupuesto(this);
         detalles.add(detalle);

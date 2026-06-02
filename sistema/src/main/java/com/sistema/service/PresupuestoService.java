@@ -46,7 +46,9 @@ public class PresupuestoService {
                              List<Long> productoIds,
                              List<Integer> cantidades,
                              List<BigDecimal> descuentos,
-                             LocalDate fechaValidez) {
+                             LocalDate fechaValidez,
+                             Presupuesto.Moneda moneda,
+                             BigDecimal tipoCambio) {
 
         // Validaciones
         if (productoIds == null || productoIds.isEmpty()) {
@@ -75,6 +77,14 @@ public class PresupuestoService {
         presupuesto.setFechaValidez(
                 fechaValidez != null ? fechaValidez : LocalDate.now().plusDays(30)
         );
+
+        presupuesto.setMoneda(moneda != null ? moneda : Presupuesto.Moneda.ARS);
+
+        if (moneda == Presupuesto.Moneda.USD) {
+            presupuesto.setTipoCambio(tipoCambio);
+        } else {
+            presupuesto.setTipoCambio(null);
+        }
 
         // Agregar detalles
         for (int i = 0; i < productoIds.size(); i++) {
@@ -253,7 +263,9 @@ public class PresupuestoService {
                                   List<BigDecimal> descuentos,
                                   List<BigDecimal> precios,
                                   FormaPago formaPago,
-                                  LocalDate fechaValidez) {
+                                  LocalDate fechaValidez,
+                                  Presupuesto.Moneda moneda,
+                                  BigDecimal tipoCambio) {
 
         Presupuesto presupuesto = buscarPorId(id);
 
@@ -281,6 +293,17 @@ public class PresupuestoService {
         if (fechaValidez != null) {
             presupuesto.setFechaValidez(fechaValidez);
         }
+
+        if (moneda != null) {
+            presupuesto.setMoneda(moneda);
+        }
+
+        if (moneda == Presupuesto.Moneda.USD) {
+            presupuesto.setTipoCambio(tipoCambio);
+        } else {
+            presupuesto.setTipoCambio(null);
+        }
+
         presupuestoRepo.saveAndFlush(presupuesto);
 
         for (int i = 0; i < productoIds.size(); i++) {

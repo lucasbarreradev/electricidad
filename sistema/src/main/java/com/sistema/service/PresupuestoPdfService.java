@@ -214,7 +214,7 @@ public class PresupuestoPdfService {
         cell4.setPadding(5);
         Paragraph p4 = new Paragraph();
         p4.add(new Chunk("Total a pagar:\n", whiteSmall));
-        p4.add(new Chunk("$ " + DF.format(p.getTotal()), white));
+        p4.add(new Chunk(simbolo(p) + DF.format(convertir(p.getTotal(), p)), white));
         cell4.addElement(p4);
         table.addCell(cell4);
 
@@ -240,13 +240,26 @@ public class PresupuestoPdfService {
         table.addCell(label);
 
         String formaPago = p.getFormaPago() != null
-                ? p.getFormaPago().toString()
-                : "No especificada";
+                ? p.getFormaPago().toString() : "No especificada";
 
         PdfPCell value = new PdfPCell(new Phrase(formaPago, normal));
         value.setBorder(Rectangle.NO_BORDER);
         value.setPadding(2);
         table.addCell(value);
+
+        // ← AGREGAR TIPO DE CAMBIO SI ES USD
+        if (p.getMoneda() == Presupuesto.Moneda.USD && p.getTipoCambio() != null) {
+            PdfPCell labelTC = new PdfPCell(new Phrase("Tipo de cambio:", bold));
+            labelTC.setBorder(Rectangle.NO_BORDER);
+            labelTC.setPadding(2);
+            table.addCell(labelTC);
+
+            PdfPCell valueTC = new PdfPCell(new Phrase(
+                    "U$D 1 = $ " + DF.format(p.getTipoCambio()) + " ARS", normal));
+            valueTC.setBorder(Rectangle.NO_BORDER);
+            valueTC.setPadding(2);
+            table.addCell(valueTC);
+        }
 
         document.add(table);
     }
@@ -267,9 +280,9 @@ public class PresupuestoPdfService {
         // Headers
         table.addCell(celdaHeader("Descripción", header));
         table.addCell(celdaHeader("Cant.", header));
-        table.addCell(celdaHeader("Precio Unitario ($)", header));
-        table.addCell(celdaHeader("IVA ($)", header));
-        table.addCell(celdaHeader("Importe ($)", header));
+        table.addCell(celdaHeader("Precio Unit. (" + (p.getMoneda() == Presupuesto.Moneda.USD ? "USD" : "ARS") + ")", header));
+        table.addCell(celdaHeader("IVA (" + (p.getMoneda() == Presupuesto.Moneda.USD ? "USD" : "ARS") + ")", header));
+        table.addCell(celdaHeader("Importe (" + (p.getMoneda() == Presupuesto.Moneda.USD ? "USD" : "ARS") + ")", header));
 
         boolean esConsumidorFinal = p.getCliente() == null ||
                 p.getCliente().getCondicionIva() == CondicionIva.CONSUMIDOR_FINAL;
@@ -328,13 +341,13 @@ public class PresupuestoPdfService {
             table.addCell(celdaNormal(cantidad.toString(), normal));
 
             // Precio unitario (neto o final según condición IVA)
-            table.addCell(celdaNormal(DF.format(precioUnitarioNeto), normal));
+            table.addCell(celdaNormal(DF.format(convertir(precioUnitarioNeto, p)), normal));
 
             // IVA por línea
-            table.addCell(celdaNormal(DF.format(ivaLinea), normal));
+            table.addCell(celdaNormal(DF.format(convertir(ivaLinea, p)), normal));
 
             // Importe total (subtotal con IVA y descuento)
-            table.addCell(celdaNormal(DF.format(subtotalConIva), normal));
+            table.addCell(celdaNormal(DF.format(convertir(subtotalConIva, p)), normal));
         }
 
         document.add(table);
@@ -399,20 +412,27 @@ public class PresupuestoPdfService {
         table.setSpacingBefore(15);
 
         if (esConsumidorFinal) {
-            // Consumidor final: solo mostrar total
-            PdfPCell labelTotal = new PdfPCell(new Phrase("Total (ARS):", bold));
+
+            String labelMoneda = "Total (" +
+                    (p.getMoneda() == Presupuesto.Moneda.USD ? "USD" : "ARS")
+                    + "):";
+
+            PdfPCell labelTotal = new PdfPCell(new Phrase(labelMoneda, bold));
             labelTotal.setBorder(Rectangle.NO_BORDER);
             labelTotal.setHorizontalAlignment(Element.ALIGN_RIGHT);
             labelTotal.setPadding(4);
             table.addCell(labelTotal);
 
-            PdfPCell valorTotal = new PdfPCell(new Phrase("$ " + DF.format(totalFinal), bold));
+            PdfPCell valorTotal = new PdfPCell(
+                    new Phrase(simbolo(p) + DF.format(convertir(totalFinal, p)), bold)
+            );
             valorTotal.setBorder(Rectangle.NO_BORDER);
             valorTotal.setHorizontalAlignment(Element.ALIGN_RIGHT);
             valorTotal.setPadding(4);
             table.addCell(valorTotal);
+        }
 
-        } else {
+         else {
             // Mostrar neto
             PdfPCell labelNeto = new PdfPCell(new Phrase("Total neto", normal));
             labelNeto.setBorder(Rectangle.NO_BORDER);
@@ -420,7 +440,7 @@ public class PresupuestoPdfService {
             labelNeto.setPadding(4);
             table.addCell(labelNeto);
 
-            PdfPCell valorNeto = new PdfPCell(new Phrase("$ " + DF.format(totalNeto), normal));
+            PdfPCell valorNeto = new PdfPCell(new Phrase(simbolo(p) + DF.format(convertir(totalNeto, p)), normal));
             valorNeto.setBorder(Rectangle.NO_BORDER);
             valorNeto.setHorizontalAlignment(Element.ALIGN_RIGHT);
             valorNeto.setPadding(4);
@@ -438,7 +458,7 @@ public class PresupuestoPdfService {
                     labelIva.setPadding(4);
                     table.addCell(labelIva);
 
-                    PdfPCell valorIva = new PdfPCell(new Phrase("$ " + DF.format(iva), normal));
+                    PdfPCell valorIva = new PdfPCell(new Phrase(simbolo(p) + DF.format(convertir(iva, p)), normal));
                     valorIva.setBorder(Rectangle.NO_BORDER);
                     valorIva.setHorizontalAlignment(Element.ALIGN_RIGHT);
                     valorIva.setPadding(4);
@@ -447,13 +467,17 @@ public class PresupuestoPdfService {
             }
 
             // Total final
-            PdfPCell labelTotal = new PdfPCell(new Phrase("Total (ARS):", bold));
+            String labelMoneda = "Total (" +
+                    (p.getMoneda() == Presupuesto.Moneda.USD ? "USD" : "ARS")
+                    + "):";
+
+            PdfPCell labelTotal = new PdfPCell(new Phrase(labelMoneda, bold));
             labelTotal.setBorder(Rectangle.NO_BORDER);
             labelTotal.setHorizontalAlignment(Element.ALIGN_RIGHT);
             labelTotal.setPadding(4);
             table.addCell(labelTotal);
 
-            PdfPCell valorTotal = new PdfPCell(new Phrase("$ " + DF.format(totalFinal), bold));
+            PdfPCell valorTotal = new PdfPCell(new Phrase(simbolo(p) + DF.format(convertir(totalFinal, p)), bold));
             valorTotal.setBorder(Rectangle.NO_BORDER);
             valorTotal.setHorizontalAlignment(Element.ALIGN_RIGHT);
             valorTotal.setPadding(4);
@@ -483,6 +507,19 @@ public class PresupuestoPdfService {
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
         cell.setBorderColor(BaseColor.LIGHT_GRAY);
         return cell;
+    }
+
+    private String simbolo(Presupuesto p) {
+        return p.getMoneda() == Presupuesto.Moneda.USD ? "U$D " : "$ ";
+    }
+
+    private BigDecimal convertir(BigDecimal monto, Presupuesto p) {
+        if (p.getMoneda() == Presupuesto.Moneda.USD
+                && p.getTipoCambio() != null
+                && p.getTipoCambio().compareTo(BigDecimal.ZERO) > 0) {
+            return monto.divide(p.getTipoCambio(), 2, RoundingMode.HALF_UP);
+        }
+        return monto;
     }
 }
 

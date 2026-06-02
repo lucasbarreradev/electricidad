@@ -88,6 +88,8 @@ public class PresupuestoController {
             @RequestParam List<Integer> cantidades,
             @RequestParam(required = false) List<BigDecimal> descuentos,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaValidez,
+            @RequestParam(required = false, defaultValue = "ARS") Presupuesto.Moneda moneda,
+            @RequestParam(required = false) BigDecimal tipoCambio,
             RedirectAttributes ra
     ) {
         try {
@@ -97,7 +99,9 @@ public class PresupuestoController {
                     productoIds,
                     cantidades,
                     descuentos,
-                    fechaValidez
+                    fechaValidez,
+                    moneda,
+                    tipoCambio
             );
 
             ra.addFlashAttribute("mensaje", "Presupuesto creado: " + presupuesto.getCodigo());
@@ -209,13 +213,15 @@ public class PresupuestoController {
             @RequestParam(required = false) List<BigDecimal> precios,
             @RequestParam(required = false) List<Long> actualizarPrecioProducto,
             @RequestParam FormaPago formaPago,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaValidez, // ← AGREGAR
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaValidez,
+            @RequestParam(required = false, defaultValue = "ARS") Presupuesto.Moneda moneda,
+            @RequestParam(required = false) BigDecimal tipoCambio,
             RedirectAttributes ra) {
 
         try {
             presupuestoService.actualizar(
                     id, clienteId, productoIds, cantidades,
-                    descuentos, precios, formaPago, fechaValidez); // ← AGREGAR
+                    descuentos, precios, formaPago, fechaValidez, moneda, tipoCambio);
 
             ra.addFlashAttribute("mensaje", "Presupuesto actualizado exitosamente");
             return "redirect:/presupuestos/detalle/" + id;

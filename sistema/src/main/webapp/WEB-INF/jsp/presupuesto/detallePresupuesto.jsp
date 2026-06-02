@@ -113,9 +113,31 @@
                                     </span>
                                 </div>
 
+                            <div class="col-md-3">
+                                <div class="text-muted">Moneda</div>
+                                <div class="small">
+                                    <c:choose>
+                                        <c:when test="${presupuesto.moneda == 'USD'}">
+                                            🇺🇸 Dólares (USD)
+                                        </c:when>
+                                        <c:otherwise>
+                                            🇦🇷 Pesos (ARS)
+                                        </c:otherwise>
+                                    </c:choose>
+                                </div>
+                            </div>
+
                             </div>
 
                             <!-- TABLA DE ITEMS -->
+                            <c:set var="esUSD" value="${presupuesto.moneda == 'USD'}"/>
+
+                            <c:set var="simboloMoneda"
+                                   value="${esUSD ? 'U$D ' : '$ '}"/>
+
+                            <c:set var="tipoCambio"
+                                   value="${not empty presupuesto.tipoCambio ? presupuesto.tipoCambio : 1}"/>
+
                             <table class="table table-hover table-striped">
                                 <thead class="table-dark">
                                 <tr>
@@ -132,10 +154,16 @@
                                         <td>${d.producto.descripcion}</td>
                                         <td class="text-center">${d.cantidad}</td>
                                         <td class="text-end">
-                                            $<fmt:formatNumber value="${d.precioUnitario}" minFractionDigits="2"/>
+                                            ${simboloMoneda}
+                                            <fmt:formatNumber
+                                                value="${esUSD ? d.precioUnitario / tipoCambio : d.precioUnitario}"
+                                                minFractionDigits="2"/>
                                         </td>
                                         <td class="text-end fw-semibold">
-                                            $<fmt:formatNumber value="${d.subtotal}" minFractionDigits="2"/>
+                                            ${simboloMoneda}
+                                            <fmt:formatNumber
+                                                value="${esUSD ? d.subtotal / tipoCambio : d.subtotal}"
+                                                minFractionDigits="2"/>
                                         </td>
                                     </tr>
                                 </c:forEach>
@@ -149,7 +177,10 @@
                                         <tr>
                                             <td colspan="3" class="text-end fw-bold">Neto</td>
                                             <td class="text-end">
-                                                $<fmt:formatNumber value="${totales.totalNeto}" minFractionDigits="2"/>
+                                                ${simboloMoneda}
+                                                <fmt:formatNumber
+                                                    value="${esUSD ? totales.totalNeto / tipoCambio : totales.totalNeto}"
+                                                    minFractionDigits="2"/>
                                             </td>
                                         </tr>
 
@@ -159,7 +190,10 @@
                                                     IVA <c:out value="${entry.key}"/>%
                                                 </td>
                                                 <td class="text-end">
-                                                    $<fmt:formatNumber value="${entry.value}" minFractionDigits="2"/>
+                                                    ${simboloMoneda}
+                                                    <fmt:formatNumber
+                                                        value="${esUSD ? entry.value / tipoCambio : entry.value}"
+                                                        minFractionDigits="2"/>
                                                 </td>
                                             </tr>
                                         </c:forEach>
@@ -167,7 +201,10 @@
                                         <tr>
                                             <td colspan="3" class="text-end fw-bold fs-5">TOTAL</td>
                                             <td class="text-end fw-bold fs-5 text-success">
-                                                $<fmt:formatNumber value="${totales.total}" minFractionDigits="2"/>
+                                                ${simboloMoneda}
+                                                <fmt:formatNumber
+                                                    value="${esUSD ? totales.total / tipoCambio : totales.total}"
+                                                    minFractionDigits="2"/>
                                             </td>
                                         </tr>
 
@@ -177,7 +214,10 @@
                                         <tr>
                                             <td colspan="3" class="fw-bold">TOTAL</td>
                                             <td class="text-end fw-bold fs-5 text-success">
-                                                $<fmt:formatNumber value="${totales.total}" minFractionDigits="2"/>
+                                                ${simboloMoneda}
+                                                <fmt:formatNumber
+                                                    value="${esUSD ? totales.total / tipoCambio : totales.total}"
+                                                    minFractionDigits="2"/>
                                             </td>
                                         </tr>
                                     </c:otherwise>
