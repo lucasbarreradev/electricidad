@@ -90,6 +90,8 @@ public class PresupuestoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaValidez,
             @RequestParam(required = false, defaultValue = "ARS") Presupuesto.Moneda moneda,
             @RequestParam(required = false) BigDecimal tipoCambio,
+            @RequestParam(required = false) String notaTipoCambio,
+            @RequestParam(required = false) List<BigDecimal> precios,
             RedirectAttributes ra
     ) {
         try {
@@ -101,7 +103,9 @@ public class PresupuestoController {
                     descuentos,
                     fechaValidez,
                     moneda,
-                    tipoCambio
+                    tipoCambio,
+                    notaTipoCambio,
+                    precios
             );
 
             ra.addFlashAttribute("mensaje", "Presupuesto creado: " + presupuesto.getCodigo());
@@ -216,12 +220,13 @@ public class PresupuestoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaValidez,
             @RequestParam(required = false, defaultValue = "ARS") Presupuesto.Moneda moneda,
             @RequestParam(required = false) BigDecimal tipoCambio,
+            @RequestParam(required = false) String notaTipoCambio,
             RedirectAttributes ra) {
 
         try {
             presupuestoService.actualizar(
                     id, clienteId, productoIds, cantidades,
-                    descuentos, precios, formaPago, fechaValidez, moneda, tipoCambio);
+                    descuentos, precios, formaPago, fechaValidez, moneda, tipoCambio, notaTipoCambio);
 
             ra.addFlashAttribute("mensaje", "Presupuesto actualizado exitosamente");
             return "redirect:/presupuestos/detalle/" + id;

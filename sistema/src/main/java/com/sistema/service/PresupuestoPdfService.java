@@ -248,14 +248,16 @@ public class PresupuestoPdfService {
         table.addCell(value);
 
         // ← AGREGAR TIPO DE CAMBIO SI ES USD
-        if (p.getMoneda() == Presupuesto.Moneda.USD && p.getTipoCambio() != null) {
-            PdfPCell labelTC = new PdfPCell(new Phrase("Tipo de cambio:", bold));
+        if (p.getMoneda() == Presupuesto.Moneda.USD
+                && p.getNotaTipoCambio() != null
+                && !p.getNotaTipoCambio().isBlank()) {
+
+            PdfPCell labelTC = new PdfPCell(new Phrase("Nota:", bold));
             labelTC.setBorder(Rectangle.NO_BORDER);
             labelTC.setPadding(2);
             table.addCell(labelTC);
 
-            PdfPCell valueTC = new PdfPCell(new Phrase(
-                    "U$D 1 = $ " + DF.format(p.getTipoCambio()) + " ARS", normal));
+            PdfPCell valueTC = new PdfPCell(new Phrase(p.getNotaTipoCambio(), normal));
             valueTC.setBorder(Rectangle.NO_BORDER);
             valueTC.setPadding(2);
             table.addCell(valueTC);

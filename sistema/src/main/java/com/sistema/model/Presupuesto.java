@@ -51,7 +51,6 @@ public class Presupuesto {
     @Column(name = "fecha_validez")
     private LocalDate fechaValidez;
 
-    // Forma de pago
     @Enumerated(EnumType.STRING)
     private FormaPago formaPago;
 
@@ -66,6 +65,9 @@ public class Presupuesto {
 
     @Column(name = "tipo_cambio", precision = 10, scale = 2)
     private BigDecimal tipoCambio;
+
+    @Column(name = "nota_tipo_cambio", length = 200)
+    private String notaTipoCambio;
 
     public void agregarDetalle(DetallePresupuesto detalle) {
         detalle.setPresupuesto(this);

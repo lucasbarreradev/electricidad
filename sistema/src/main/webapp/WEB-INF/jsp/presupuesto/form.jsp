@@ -292,7 +292,16 @@
                                                                                        value="${not empty presupuesto.tipoCambio ? presupuesto.tipoCambio : 1200}"
                                                                                        oninput="recalcularPreciosUSD()">
                                                                                 <span class="input-group-text">ARS</span>
-                                                                            </div>
+                                                                                </div>
+                                                                                <div class="mt-2">
+                                                                                                                            <label class="form-label">Nota sobre el tipo de cambio</label>
+                                                                                                                            <textarea name="notaTipoCambio"
+                                                                                                                                      id="notaTipoCambio"
+                                                                                                                                      class="form-control"
+                                                                                                                                      rows="2"
+                                                                                                                                      maxlength="200">${not empty presupuesto.notaTipoCambio ? presupuesto.notaTipoCambio : ''}</textarea>
+                                                                                                                        </div>
+
                                                                             <small class="text-muted">Los precios se convierten automáticamente</small>
                                                                         </div>
 
@@ -496,7 +505,13 @@ function renderTabla() {
         tbody.innerHTML +=
             "<tr>" +
                 "<td><strong>" + item.descripcion + "</strong></td>" +
-                "<td class='text-center'>..." +
+                "<td class='text-center'>" +
+                    "<div class='input-group input-group-sm' style='width: 100px; margin: auto;'>" +
+                        "<button type='button' class='btn btn-outline-secondary btn-sm' onclick='cambiarCantidad(" + index + ", -1)'>-</button>" +
+                        "<input type='number' class='form-control text-center' value='" + item.cantidad + "' " +
+                            "min='1' onchange='setCantidad(" + index + ", this.value)' style='width: 45px;'>" +
+                        "<button type='button' class='btn btn-outline-secondary btn-sm' onclick='cambiarCantidad(" + index + ", 1)'>+</button>" +
+                    "</div>" +
                 "</td>" +
                 "<td class='text-end' style='width: 170px;'>" +
                     "<div class='input-group input-group-sm' style='width: 150px; margin-left: auto;'>" +
@@ -542,15 +557,18 @@ function setCantidad(index, valor) {
 }
 
 function setPrecio(index, valor) {
-let nuevoPrecio = parseFloat(valor);
-if (isNaN(nuevoPrecio) || nuevoPrecio < 0) return;
-// Si está en USD, convertir a ARS antes de guardar
-if (monedaActual === 'USD') {
-items[index].precioManual = parseFloat((nuevoPrecio * tipoCambio).toFixed(2));
-} else {
-items[index].precioManual = nuevoPrecio;
-}
-renderTabla(); actualizarPreciosFinal();
+    let nuevoPrecio = parseFloat(valor);
+    if (isNaN(nuevoPrecio) || nuevoPrecio < 0) return;
+
+    if (monedaActual === 'USD') {
+        items[index].precioManual = parseFloat((nuevoPrecio * tipoCambio).toFixed(2));
+    } else {
+        items[index].precioManual = nuevoPrecio;
+    }
+
+    items[index].precioEditado = true; // ← MARCAR COMO EDITADO MANUALMENTE
+
+    actualizarPreciosFinal();
 }
 
 // ==========================================
@@ -767,11 +785,15 @@ function cambiarMoneda(moneda) {
     monedaActual = moneda;
     simboloMoneda = moneda === 'USD' ? 'U$D ' : '$ ';
 
-    // Mostrar/ocultar tipo de cambio
+    // Limpiar flags de edición al cambiar moneda
+    items.forEach(item => {
+        item.precioEditado = false;
+        item.precioManual = null;
+    });
+
     document.getElementById('tipoCambioSection').style.display =
         moneda === 'USD' ? 'block' : 'none';
 
-    // Recalcular precios
     recalcularPreciosUSD();
     renderTabla();
     actualizarPreciosFinal();
@@ -779,19 +801,6 @@ function cambiarMoneda(moneda) {
 
 function recalcularPreciosUSD() {
     tipoCambio = parseFloat(document.getElementById('tipoCambio').value) || 1;
-
-    if (monedaActual === 'USD') {
-        items.forEach(item => {
-            // Precio en USD para mostrar (se guarda en ARS en el hidden)
-            item.precioDisplay = parseFloat((item.precioContado / tipoCambio).toFixed(2));
-            item.precioManual = item.precioContado; // ← guarda ARS en BD
-        });
-    } else {
-        items.forEach(item => {
-            item.precioDisplay = null;
-            item.precioManual = null;
-        });
-    }
 
     renderTabla();
     actualizarPreciosFinal();
