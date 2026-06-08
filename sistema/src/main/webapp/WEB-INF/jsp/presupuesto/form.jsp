@@ -289,7 +289,7 @@
                                                                                        class="form-control"
                                                                                        step="0.01"
                                                                                        min="1"
-                                                                                       value="${not empty presupuesto.tipoCambio ? presupuesto.tipoCambio : 1200}"
+                                                                                       value="${not empty presupuesto.tipoCambio ? presupuesto.tipoCambio : 1}"
                                                                                        oninput="recalcularPreciosUSD()">
                                                                                 <span class="input-group-text">ARS</span>
                                                                                 </div>
@@ -382,7 +382,7 @@ const itemsExistentes = [];
 <script>
 let monedaActual = '${not empty presupuesto.moneda ? presupuesto.moneda : "ARS"}';
 let simboloMoneda = monedaActual === 'USD' ? 'U$D ' : '$ ';
-let tipoCambio = ${not empty presupuesto.tipoCambio ? presupuesto.tipoCambio : 1200};
+let tipoCambio = ${not empty presupuesto.tipoCambio ? presupuesto.tipoCambio : 1};
 
 let items = [];
 let productoSeleccionado = null;
