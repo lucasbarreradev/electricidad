@@ -491,7 +491,6 @@ function renderTabla() {
     items.forEach((item, index) => {
         let formaPago = document.getElementById("formaPago").value;
 
-        // Precio para MOSTRAR (en USD si aplica)
         let precioBase = item.precioManual != null ? item.precioManual
                    : formaPago === "TARJETA" ? item.precioTarjeta
                    : formaPago === "CUENTA_CORRIENTE" ? item.precioCC
@@ -522,35 +521,35 @@ function renderTabla() {
                                "min='0' step='0.01' " +
                                "onchange='setPrecio(" + index + ", this.value)'>" +
                     "</div>" +
-
                     (item.precioEditado ?
                         "<div class='form-check mt-1'>" +
-                            "<input class='form-check-input' type='checkbox' checked " +
+                            "<input class='form-check-input' type='checkbox' " +
+                                   (item.actualizarProducto ? "checked" : "") + " " +
                                    "id='chk" + index + "' " +
                                    "onchange='toggleActualizarProducto(" + index + ", this.checked)'>" +
-                            "<label class='form-check-label small'>" +
+                            "<label class='form-check-label small' for='chk" + index + "'>" +
                                 "Actualizar producto" +
                             "</label>" +
                         "</div>"
                         : ""
                     ) +
-                "</td>"
+                "</td>" +
                 "<td class='text-center'>" + (item.descuento > 0 ? item.descuento + "%" : "-") + "</td>" +
                 "<td class='text-end fw-semibold'>" + simboloMoneda + subtotalMostrar.toFixed(2) + "</td>" +
                 "<td class='text-center'><button type='button' class='btn btn-danger btn-sm' onclick='eliminarItem(" + index + ")'>✕</button></td>" +
             "</tr>";
 
-        // Hidden siempre en ARS
         hidden.innerHTML +=
             "<input type='hidden' name='productoIds' value='" + item.productoId + "'>" +
             "<input type='hidden' name='cantidades' value='" + item.cantidad + "'>" +
             "<input type='hidden' name='descuentos' value='" + item.descuento + "'>" +
             "<input type='hidden' name='precios' value='" + precioBase.toFixed(2) + "'>";
-            if (item.precioEditado && item.actualizarProducto) {
-                hidden.innerHTML +=
-                    "<input type='hidden' name='actualizarPrecioProducto' value='" +
-                    item.productoId + "'>";
-            }
+
+        if (item.precioEditado && item.actualizarProducto) {
+            hidden.innerHTML +=
+                "<input type='hidden' name='actualizarPrecioProducto' value='" +
+                item.productoId + "'>";
+        }
     });
 
     document.getElementById("cantidadItems").textContent = items.length;
