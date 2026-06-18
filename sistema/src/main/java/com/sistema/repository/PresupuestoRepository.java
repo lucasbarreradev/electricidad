@@ -24,4 +24,6 @@ public interface PresupuestoRepository extends JpaRepository<Presupuesto, Long> 
     @Query("SELECT p FROM Presupuesto p LEFT JOIN FETCH p.detalles d LEFT JOIN FETCH d.producto WHERE p.id = :id")
     Optional<Presupuesto> findByIdConDetalles(@Param("id") Long id);
 
+    List<Presupuesto> findByEstado(EstadoPresupuesto estado);
+
 }

@@ -15,13 +15,16 @@ public class ProductoService {
     private final ProductoRepository productoRepo;
     private final ProveedorRepository proveedorRepository;
     private final MovimientoInventarioRepository movimientoRepo;
+    private final PresupuestoService presupuestoService;
 
     public ProductoService(ProductoRepository productoRepo,
                             ProveedorRepository proveedorRepository,
-                           MovimientoInventarioRepository movimientoRepo) {
+                           MovimientoInventarioRepository movimientoRepo,
+                           PresupuestoService presupuestoService) {
         this.productoRepo = productoRepo;
         this.proveedorRepository = proveedorRepository;
         this.movimientoRepo = movimientoRepo;
+        this.presupuestoService = presupuestoService;
     }
 
     public List<Producto> getProductos() {
@@ -91,7 +94,14 @@ public class ProductoService {
             existente.setProveedor(proveedor);
         }
 
+        presupuestoService.actualizarPrecioProductoEnPendientes(
+                existente.getId(),
+                existente.getPrecioContado(),
+                existente.getPrecioTarjeta(),
+                existente.getPrecioCuentaCorriente());
+
         return productoRepo.save(existente);
+
     }
 
     public void deleteProducto(Long id) {

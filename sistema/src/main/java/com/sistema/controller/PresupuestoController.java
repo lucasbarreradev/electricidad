@@ -226,7 +226,7 @@ public class PresupuestoController {
         try {
             presupuestoService.actualizar(
                     id, clienteId, productoIds, cantidades,
-                    descuentos, precios, formaPago, fechaValidez, moneda, tipoCambio, notaTipoCambio);
+                    descuentos, precios, actualizarPrecioProducto, formaPago, fechaValidez, moneda, tipoCambio, notaTipoCambio);
 
             ra.addFlashAttribute("mensaje", "Presupuesto actualizado exitosamente");
             return "redirect:/presupuestos/detalle/" + id;

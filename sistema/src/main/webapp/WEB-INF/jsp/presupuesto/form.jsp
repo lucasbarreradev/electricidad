@@ -446,7 +446,8 @@ function agregarProducto() {
             precioContado: precioContado,
             precioTarjeta: precioTarjeta,
             precioCC: precioCC,
-            descuento: descuentoPct
+            descuento: descuentoPct,
+            actualizarProducto: false
         });
     }
 
@@ -513,13 +514,27 @@ function renderTabla() {
                         "<button type='button' class='btn btn-outline-secondary btn-sm' onclick='cambiarCantidad(" + index + ", 1)'>+</button>" +
                     "</div>" +
                 "</td>" +
-                "<td class='text-end' style='width: 170px;'>" +
-                    "<div class='input-group input-group-sm' style='width: 150px; margin-left: auto;'>" +
+                "<td class='text-end' style='width: 220px;'>" +
+                    "<div class='input-group input-group-sm'>" +
                         "<span class='input-group-text'>" + simboloMoneda + "</span>" +
-                        "<input type='number' class='form-control text-end' value='" + precioMostrar.toFixed(2) + "' " +
-                            "min='0' step='0.01' onchange='setPrecio(" + index + ", this.value)' style='width: 70px;'>" +
+                        "<input type='number' class='form-control text-end' " +
+                               "value='" + precioMostrar.toFixed(2) + "' " +
+                               "min='0' step='0.01' " +
+                               "onchange='setPrecio(" + index + ", this.value)'>" +
                     "</div>" +
-                "</td>" +
+
+                    (item.precioEditado ?
+                        "<div class='form-check mt-1'>" +
+                            "<input class='form-check-input' type='checkbox' checked " +
+                                   "id='chk" + index + "' " +
+                                   "onchange='toggleActualizarProducto(" + index + ", this.checked)'>" +
+                            "<label class='form-check-label small'>" +
+                                "Actualizar producto" +
+                            "</label>" +
+                        "</div>"
+                        : ""
+                    ) +
+                "</td>"
                 "<td class='text-center'>" + (item.descuento > 0 ? item.descuento + "%" : "-") + "</td>" +
                 "<td class='text-end fw-semibold'>" + simboloMoneda + subtotalMostrar.toFixed(2) + "</td>" +
                 "<td class='text-center'><button type='button' class='btn btn-danger btn-sm' onclick='eliminarItem(" + index + ")'>✕</button></td>" +
@@ -531,6 +546,11 @@ function renderTabla() {
             "<input type='hidden' name='cantidades' value='" + item.cantidad + "'>" +
             "<input type='hidden' name='descuentos' value='" + item.descuento + "'>" +
             "<input type='hidden' name='precios' value='" + precioBase.toFixed(2) + "'>";
+            if (item.precioEditado && item.actualizarProducto) {
+                hidden.innerHTML +=
+                    "<input type='hidden' name='actualizarPrecioProducto' value='" +
+                    item.productoId + "'>";
+            }
     });
 
     document.getElementById("cantidadItems").textContent = items.length;
@@ -557,17 +577,24 @@ function setCantidad(index, valor) {
 }
 
 function setPrecio(index, valor) {
+
     let nuevoPrecio = parseFloat(valor);
-    if (isNaN(nuevoPrecio) || nuevoPrecio < 0) return;
+
+    if (isNaN(nuevoPrecio) || nuevoPrecio < 0) {
+        return;
+    }
 
     if (monedaActual === 'USD') {
-        items[index].precioManual = parseFloat((nuevoPrecio * tipoCambio).toFixed(2));
+        items[index].precioManual =
+            parseFloat((nuevoPrecio * tipoCambio).toFixed(2));
     } else {
         items[index].precioManual = nuevoPrecio;
     }
 
-    items[index].precioEditado = true; // ← MARCAR COMO EDITADO MANUALMENTE
+    items[index].precioEditado = true;
+    items[index].actualizarProducto = true;
 
+    renderTabla();
     actualizarPreciosFinal();
 }
 
@@ -617,6 +644,11 @@ function actualizarPreciosFinal() {
     renderTabla();
     verificarHabilitarBoton();
 }
+
+function toggleActualizarProducto(index, checked) {
+    items[index].actualizarProducto = checked;
+}
+
 // ==========================================
 // VERIFICAR BOTÓN
 // ==========================================

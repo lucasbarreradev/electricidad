@@ -277,6 +277,7 @@ public class PresupuestoService {
                                   List<Integer> cantidades,
                                   List<BigDecimal> descuentos,
                                   List<BigDecimal> precios,
+                                  List<Long> actualizarPrecioProducto,
                                   FormaPago formaPago,
                                   LocalDate fechaValidez,
                                   Presupuesto.Moneda moneda,
@@ -324,6 +325,8 @@ public class PresupuestoService {
 
         presupuestoRepo.saveAndFlush(presupuesto);
 
+
+
         for (int i = 0; i < productoIds.size(); i++) {
 
             Producto producto = productoRepo.findById(productoIds.get(i))
@@ -340,6 +343,34 @@ public class PresupuestoService {
                 precio = precios.get(i);
             } else {
                 precio = producto.getPrecioSegunFormaPago(formaPago);
+            }
+
+            if (actualizarPrecioProducto != null
+                    && actualizarPrecioProducto.contains(producto.getId())) {
+
+                switch (formaPago) {
+
+                    case CONTADO:
+                        producto.setPrecioContado(precio);
+                        break;
+
+                    case TARJETA:
+                        producto.setPrecioTarjeta(precio);
+                        break;
+
+                    case CUENTA_CORRIENTE:
+                        producto.setPrecioCuentaCorriente(precio);
+                        break;
+                }
+
+                productoRepo.save(producto);
+
+                actualizarPrecioProductoEnPendientes(
+                        producto.getId(),
+                        producto.getPrecioContado(),
+                        producto.getPrecioTarjeta(),
+                        producto.getPrecioCuentaCorriente()
+                );
             }
 
             DetallePresupuesto detalle = new DetallePresupuesto();
@@ -391,6 +422,53 @@ public class PresupuestoService {
         }
 
         presupuestoRepo.delete(presupuesto);
+    }
+
+    @Transactional
+    public void actualizarPrecioProductoEnPendientes(
+            Long productoId,
+            BigDecimal nuevoPrecioContado,
+            BigDecimal nuevoPrecioTarjeta,
+            BigDecimal nuevoPrecioCC) {
+
+        List<Presupuesto> pendientes =
+                presupuestoRepo.findByEstado(EstadoPresupuesto.PENDIENTE);
+
+        for (Presupuesto presupuesto : pendientes) {
+
+            boolean modificado = false;
+
+            for (DetallePresupuesto detalle : presupuesto.getDetalles()) {
+
+                if (detalle.getProducto().getId().equals(productoId)) {
+
+                    BigDecimal precioNuevo;
+
+                    switch (presupuesto.getFormaPago()) {
+                        case TARJETA:
+                            precioNuevo = nuevoPrecioTarjeta;
+                            break;
+
+                        case CUENTA_CORRIENTE:
+                            precioNuevo = nuevoPrecioCC;
+                            break;
+
+                        default:
+                            precioNuevo = nuevoPrecioContado;
+                    }
+
+                    detalle.setPrecioUnitario(precioNuevo);
+                    detalle.calcularSubtotal();
+
+                    modificado = true;
+                }
+            }
+
+            if (modificado) {
+                presupuesto.calcularTotal();
+                presupuestoRepo.save(presupuesto);
+            }
+        }
     }
 
 }
