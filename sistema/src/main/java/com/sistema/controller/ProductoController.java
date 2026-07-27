@@ -3,14 +3,18 @@ package com.sistema.controller;
 import com.sistema.model.Producto;
 import com.sistema.model.Proveedor;
 import com.sistema.model.TipoIva;
+import com.sistema.service.ProductoExcelService;
 import com.sistema.service.ProductoService;
 import com.sistema.service.ProveedorService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.support.SessionStatus;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 
 @Controller
@@ -19,11 +23,14 @@ import java.util.List;
 public class ProductoController {
     private final ProductoService productoService;
     private final ProveedorService proveedorService;
+    private final ProductoExcelService productoExcelService;
 
     public ProductoController(ProductoService productoService,
-                              ProveedorService proveedorService) {
+                              ProveedorService proveedorService,
+                              ProductoExcelService productoExcelService) {
         this.productoService = productoService;
         this.proveedorService = proveedorService;
+        this.productoExcelService = productoExcelService;
     }
 
     // ==========================================
@@ -34,6 +41,21 @@ public class ProductoController {
         model.addAttribute("productos",
                 productoService.getProductos());
         return "producto/listar";
+    }
+
+    @GetMapping("/exportar-excel")
+    public void exportarExcel(HttpServletResponse response) throws IOException {
+        String nombreArchivo = "productos-" + LocalDate.now() + ".xlsx";
+
+        response.setContentType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader(
+                "Content-Disposition",
+                "attachment; filename=\"" + nombreArchivo + "\"");
+
+        productoExcelService.exportar(
+                productoService.getProductos(),
+                response.getOutputStream());
     }
 
     // ==========================================

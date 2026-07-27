@@ -33,10 +33,18 @@
                 <div class="d-sm-flex align-items-center justify-content-between mb-4 mt-4">
                     <h1 class="h3 mb-0 text-gray-800">Productos</h1>
 
-                    <a href="${pageContext.request.contextPath}/productos/nuevo/limpio"
-                       class="btn btn-primary">
-                        + Nuevo Producto
-                    </a>
+                    <div>
+                        <a href="${pageContext.request.contextPath}/productos/exportar-excel"
+                           class="btn btn-success mr-2">
+                            <i class="fas fa-file-excel mr-1"></i>
+                            Descargar Excel
+                        </a>
+
+                        <a href="${pageContext.request.contextPath}/productos/nuevo/limpio"
+                           class="btn btn-primary">
+                            + Nuevo Producto
+                        </a>
+                    </div>
 
                 </div>
 
