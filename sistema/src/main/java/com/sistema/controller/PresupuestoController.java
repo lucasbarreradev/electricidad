@@ -5,6 +5,7 @@ import com.sistema.repository.*;
 import com.sistema.service.PresupuestoPdfService;
 import com.sistema.service.PresupuestoService;
 import com.sistema.service.RemitoService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
@@ -16,6 +17,7 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 
 @Controller
@@ -92,9 +94,12 @@ public class PresupuestoController {
             @RequestParam(required = false) BigDecimal tipoCambio,
             @RequestParam(required = false) String notaTipoCambio,
             @RequestParam(required = false) List<BigDecimal> precios,
+            @RequestParam List<BigDecimal> alicuotasIva,
+            HttpServletRequest request,
             RedirectAttributes ra
     ) {
         try {
+            List<String> descripciones = leerDescripciones(request);
             Presupuesto presupuesto = presupuestoService.crear(
                     clienteId,
                     formaPago,
@@ -105,7 +110,9 @@ public class PresupuestoController {
                     moneda,
                     tipoCambio,
                     notaTipoCambio,
-                    precios
+                    precios,
+                    descripciones,
+                    alicuotasIva
             );
 
             ra.addFlashAttribute("mensaje", "Presupuesto creado: " + presupuesto.getCodigo());
@@ -215,18 +222,23 @@ public class PresupuestoController {
             @RequestParam List<Integer> cantidades,
             @RequestParam(required = false) List<BigDecimal> descuentos,
             @RequestParam(required = false) List<BigDecimal> precios,
+            @RequestParam List<BigDecimal> alicuotasIva,
             @RequestParam(required = false) List<Long> actualizarPrecioProducto,
             @RequestParam FormaPago formaPago,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaValidez,
             @RequestParam(required = false, defaultValue = "ARS") Presupuesto.Moneda moneda,
             @RequestParam(required = false) BigDecimal tipoCambio,
             @RequestParam(required = false) String notaTipoCambio,
+            HttpServletRequest request,
             RedirectAttributes ra) {
 
         try {
+            List<String> descripciones = leerDescripciones(request);
             presupuestoService.actualizar(
                     id, clienteId, productoIds, cantidades,
-                    descuentos, precios, actualizarPrecioProducto, formaPago, fechaValidez, moneda, tipoCambio, notaTipoCambio);
+                    descuentos, precios, descripciones, alicuotasIva,
+                    actualizarPrecioProducto, formaPago, fechaValidez,
+                    moneda, tipoCambio, notaTipoCambio);
 
             ra.addFlashAttribute("mensaje", "Presupuesto actualizado exitosamente");
             return "redirect:/presupuestos/detalle/" + id;
@@ -317,6 +329,11 @@ public class PresupuestoController {
     } catch (Exception e) {
         throw new RuntimeException("Error generando PDF", e);
     }
+    }
+
+    private List<String> leerDescripciones(HttpServletRequest request) {
+        String[] valores = request.getParameterValues("descripciones");
+        return valores != null ? Arrays.asList(valores) : null;
     }
 
     }

@@ -6,6 +6,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +43,10 @@ import java.util.List;
         @Column(name = "tipo", nullable = false, length = 20)
         private Tipo tipo = Tipo.ENTREGA;
 
+        @Enumerated(EnumType.STRING)
+        @Column(name = "forma_pago_precio", length = 30)
+        private FormaPago formaPagoPrecio;
+
         @OneToMany(mappedBy = "remito", cascade = CascadeType.ALL, orphanRemoval = true)
         private List<RemitoItem> items = new ArrayList<>();
 
@@ -57,6 +62,9 @@ import java.util.List;
 
         @Column(name = "incluye_precios", nullable = false)
         private Boolean incluyePrecios = false; // Si muestra precios o no
+
+        @Column(name = "stock_descontado", nullable = false)
+        private Boolean stockDescontado = false;
 
         // ==========================================
         // ENUMS
@@ -87,6 +95,13 @@ import java.util.List;
             total = items.stream()
                     .map(RemitoItem::getSubtotal)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+
+        @Transient
+        public String getFechaFormateada() {
+            return fechaEmision != null
+                    ? fechaEmision.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                    : "";
         }
 
     @PrePersist

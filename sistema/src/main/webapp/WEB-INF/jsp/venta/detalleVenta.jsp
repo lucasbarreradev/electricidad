@@ -136,7 +136,7 @@
                             <tbody>
                             <c:forEach items="${venta.items}" var="item">
                                 <tr>
-                                    <td>${item.producto.descripcion}</td>
+                                    <td>${item.descripcionMostrada}</td>
                                     <td class="text-center">${item.cantidad}</td>
                                     <td class="text-end">
                                         $<fmt:formatNumber value="${item.precioUnitario}"

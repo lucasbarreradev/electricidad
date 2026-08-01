@@ -8,7 +8,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/clientes")
@@ -115,6 +117,48 @@ public class ClienteController {
     @ResponseBody
     public List<Cliente> buscar(@RequestParam String q) {
         return clienteService.buscar(q);
+    }
+
+    @PostMapping("/guardar-rapido")
+    @ResponseBody
+    public Map<String, Object> guardarRapido(
+            @RequestParam String nombre,
+            @RequestParam(required = false) String apellido,
+            @RequestParam(required = false) String telefono,
+            @RequestParam(required = false) String dni,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String direccion,
+            @RequestParam(defaultValue = "CONSUMIDOR_FINAL")
+            CondicionIva condicionIva) {
+
+        if (nombre == null || nombre.isBlank()) {
+            throw new IllegalArgumentException("El nombre es obligatorio");
+        }
+
+        Cliente cliente = new Cliente();
+        cliente.setNombre(nombre.trim());
+        cliente.setApellido(limpiar(apellido));
+        cliente.setTelefono(limpiar(telefono));
+        cliente.setDni(limpiar(dni));
+        cliente.setEmail(limpiar(email));
+        cliente.setDireccion(limpiar(direccion));
+        cliente.setCondicionIva(condicionIva);
+
+        Cliente guardado = clienteService.saveCliente(cliente);
+
+        Map<String, Object> respuesta = new LinkedHashMap<>();
+        respuesta.put("id", guardado.getId());
+        respuesta.put("nombre", guardado.getNombre());
+        respuesta.put("apellido",
+                guardado.getApellido() != null ? guardado.getApellido() : "");
+        respuesta.put("dni", guardado.getDni() != null ? guardado.getDni() : "");
+        respuesta.put("direccion",
+                guardado.getDireccion() != null ? guardado.getDireccion() : "");
+        return respuesta;
+    }
+
+    private String limpiar(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
     }
 
 }

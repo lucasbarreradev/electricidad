@@ -29,8 +29,11 @@ public class VentaItem {
 
     // Producto vendido
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "producto_id", nullable = false)
+    @JoinColumn(name = "producto_id", nullable = true)
     private Producto producto;
+
+    @Column(name = "descripcion", length = 500)
+    private String descripcion;
 
     // Cantidad vendida
     @Column(name = "cantidad", nullable = false)
@@ -57,6 +60,14 @@ public class VentaItem {
     // Constructores
     // ==========================================
     public VentaItem() {
+    }
+
+    @Transient
+    public String getDescripcionMostrada() {
+        if (descripcion != null && !descripcion.isBlank()) {
+            return descripcion;
+        }
+        return producto != null ? producto.getDescripcion() : "";
     }
 
     @Transient

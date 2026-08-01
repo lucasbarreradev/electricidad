@@ -25,8 +25,11 @@ public class DetallePresupuesto {
     private Presupuesto presupuesto;
 
     @ManyToOne
-    @JoinColumn(name = "producto_id", nullable = false)
+    @JoinColumn(name = "producto_id", nullable = true)
     private Producto producto;
+
+    @Column(name = "descripcion", length = 500)
+    private String descripcion;
 
     @Column(name = "descuento_pct")
     private BigDecimal descuentoPct = BigDecimal.ZERO;
@@ -42,6 +45,14 @@ public class DetallePresupuesto {
     private BigDecimal subtotal; // CON IVA
 
     public DetallePresupuesto() {
+    }
+
+    @Transient
+    public String getDescripcionMostrada() {
+        if (descripcion != null && !descripcion.isBlank()) {
+            return descripcion;
+        }
+        return producto != null ? producto.getDescripcion() : "";
     }
 
     @Transient

@@ -104,7 +104,7 @@
                     <!-- PASO 1: CLIENTE -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
-                            <small class="badge bg-secondary">Paso 1</small>
+                            <small class="badge bg-secondary text-white">Paso 1</small>
                             Cliente (opcional)
                         </label>
                         <input type="text"

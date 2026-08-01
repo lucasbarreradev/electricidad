@@ -158,11 +158,12 @@ public class VentaService {
         );
 
         for (DetallePresupuesto dp : p.getDetalles()) {
-
-            Producto producto = productoRepo.findById(
-                    dp.getProducto().getId()
-            ).orElseThrow(() ->
-                    new IllegalArgumentException("Producto no encontrado"));
+            Producto producto = null;
+            if (dp.getProducto() != null) {
+                producto = productoRepo.findById(dp.getProducto().getId())
+                        .orElseThrow(() ->
+                                new IllegalArgumentException("Producto no encontrado"));
+            }
 
             BigDecimal precio = dp.getPrecioUnitario();
 
@@ -174,23 +175,29 @@ public class VentaService {
             VentaItem item = new VentaItem();
             item.setPrecioUnitario(precio); // ← precio del presupuesto
             item.setProducto(producto);
+            item.setDescripcion(dp.getDescripcionMostrada());
             item.setCantidad(dp.getCantidad());
             item.setCostoUnitario(
-                    producto.getPrecioCompra() != null
+                    producto != null && producto.getPrecioCompra() != null
                             ? producto.getPrecioCompra()
                             : BigDecimal.ZERO
             );
             item.setDescuentoPct(dp.getDescuentoPct());
-            item.setAlicuotaIva(producto.getTipoIva().getPorcentaje());
+            item.setAlicuotaIva(
+                    dp.getAlicuotaIva() != null
+                            ? dp.getAlicuotaIva()
+                            : BigDecimal.ZERO);
             item.calcularSubtotal();
 
             venta.agregarItem(item);
 
-            movimientoService.registrarVenta(
-                    producto.getId(),
-                    dp.getCantidad(),
-                    "Venta desde presupuesto " + p.getCodigo()
-            );
+            if (producto != null) {
+                movimientoService.registrarVenta(
+                        producto.getId(),
+                        dp.getCantidad(),
+                        "Venta desde presupuesto " + p.getCodigo()
+                );
+            }
         }
 
         venta.calcularTotales();
@@ -201,6 +208,68 @@ public class VentaService {
         presupuestoRepo.save(p);
 
         return ventaGuardada;
+    }
+
+    // =====================================================
+    // VENTA AL COBRAR UN REMITO
+    // El stock ya fue descontado cuando se entregó la mercadería.
+    // =====================================================
+    public Venta crearDesdeRemito(Remito remito, FormaPago formaPago) {
+
+        if (remito == null || remito.getItems() == null
+                || remito.getItems().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "El remito debe tener al menos un producto");
+        }
+
+        Venta venta = new Venta(
+                generarCodigoVenta(),
+                remito.getCliente(),
+                // La columna MySQL existente admite DIRECTA y PRESUPUESTO.
+                // La nota conserva la trazabilidad específica del remito.
+                Venta.Origen.DIRECTA,
+                formaPago,
+                null,
+                "Generada al cobrar el remito " + remito.getCodigo()
+        );
+
+        for (RemitoItem remitoItem : remito.getItems()) {
+            Producto producto = productoRepo.findById(
+                    remitoItem.getProducto().getId()
+            ).orElseThrow(() ->
+                    new IllegalArgumentException("Producto no encontrado"));
+
+            BigDecimal precio = remitoItem.getPrecioUnitario();
+            if (precio == null) {
+                throw new IllegalStateException(
+                        "El remito no tiene precio configurado");
+            }
+
+            VentaItem item = new VentaItem();
+            item.setProducto(producto);
+            item.setCantidad(remitoItem.getCantidad());
+            item.setPrecioUnitario(precio);
+            item.setCostoUnitario(
+                    producto.getPrecioCompra() != null
+                            ? producto.getPrecioCompra()
+                            : BigDecimal.ZERO);
+            item.setDescuentoPct(
+                    remitoItem.getDescuentoPct() != null
+                            ? remitoItem.getDescuentoPct()
+                            : BigDecimal.ZERO);
+            item.setAlicuotaIva(
+                    producto.getTipoIva() != null
+                            ? producto.getTipoIva().getPorcentaje()
+                            : BigDecimal.ZERO);
+            item.calcularSubtotal();
+            venta.agregarItem(item);
+        }
+
+        venta.calcularTotales();
+        venta.setEstado(Venta.Estado.COMPLETADA);
+
+        // No se registra un movimiento: la salida ocurrió al crear el remito.
+        return ventaRepo.save(venta);
     }
 
 
@@ -259,11 +328,13 @@ public class VentaService {
         }
 
         for (VentaItem item : venta.getItems()) {
-            movimientoService.registrarDevolucion(
-                    item.getProducto().getId(),
-                    item.getCantidad(),
-                    "Anulación venta " + venta.getCodigo()
-            );
+            if (item.getProducto() != null) {
+                movimientoService.registrarDevolucion(
+                        item.getProducto().getId(),
+                        item.getCantidad(),
+                        "Anulación venta " + venta.getCodigo()
+                );
+            }
         }
 
         venta.setEstado(Venta.Estado.ANULADA);

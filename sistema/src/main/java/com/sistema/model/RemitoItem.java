@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Entity
 @Table(name = "remito_item")
@@ -19,14 +20,20 @@ public class RemitoItem {
     private Remito remito;
 
     @ManyToOne
-    @JoinColumn(name = "producto_id", nullable = false)
+    @JoinColumn(name = "producto_id", nullable = true)
     private Producto producto;
+
+    @Column(name = "descripcion", length = 500)
+    private String descripcion;
 
     @Column(name = "cantidad", nullable = false)
     private Integer cantidad;
 
     @Column(name = "precio_unitario", precision = 10, scale = 2)
     private BigDecimal precioUnitario = BigDecimal.ZERO;
+
+    @Column(name = "descuento_pct", precision = 5, scale = 2)
+    private BigDecimal descuentoPct = BigDecimal.ZERO;
 
     @Column(name = "subtotal", precision = 10, scale = 2)
     private BigDecimal subtotal = BigDecimal.ZERO;
@@ -37,9 +44,24 @@ public class RemitoItem {
 
     public void calcularSubtotal() {
         if (precioUnitario != null && cantidad != null) {
-            subtotal = precioUnitario.multiply(new BigDecimal(cantidad));
+            BigDecimal bruto = precioUnitario.multiply(new BigDecimal(cantidad));
+            BigDecimal descuento = descuentoPct != null
+                    ? descuentoPct
+                    : BigDecimal.ZERO;
+            BigDecimal montoDescuento = bruto
+                    .multiply(descuento)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            subtotal = bruto.subtract(montoDescuento);
         } else {
             subtotal = BigDecimal.ZERO;
         }
+    }
+
+    @Transient
+    public String getDescripcionMostrada() {
+        if (descripcion != null && !descripcion.isBlank()) {
+            return descripcion;
+        }
+        return producto != null ? producto.getDescripcion() : "";
     }
 }

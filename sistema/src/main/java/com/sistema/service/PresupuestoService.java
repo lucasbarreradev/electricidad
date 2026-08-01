@@ -50,14 +50,21 @@ public class PresupuestoService {
                              Presupuesto.Moneda moneda,
                              BigDecimal tipoCambio,
                              String notaTipoCambio,
-                             List<BigDecimal> precios) {
+                             List<BigDecimal> precios,
+                             List<String> descripciones,
+                             List<BigDecimal> alicuotasIva) {
 
         // Validaciones
         if (productoIds == null || productoIds.isEmpty()) {
-            throw new IllegalArgumentException("Debe agregar al menos un producto");
+            throw new IllegalArgumentException("Debe agregar al menos un ítem");
         }
 
-        if (productoIds.size() != cantidades.size()) {
+        if (cantidades == null || precios == null || descripciones == null
+                || alicuotasIva == null
+                || productoIds.size() != cantidades.size()
+                || productoIds.size() != precios.size()
+                || productoIds.size() != descripciones.size()
+                || productoIds.size() != alicuotasIva.size()) {
             throw new IllegalArgumentException("Datos inconsistentes");
         }
 
@@ -95,9 +102,7 @@ public class PresupuestoService {
 
             Long productoId = productoIds.get(i);
 
-            Producto producto = productoRepo.findById(productoId)
-                    .orElseThrow(() ->
-                            new IllegalArgumentException("Producto no encontrado: " + productoId));
+            Producto producto = buscarProductoOpcional(productoId);
 
             Integer cantidad = cantidades.get(i);
 
@@ -105,25 +110,22 @@ public class PresupuestoService {
                     ? descuentos.get(i)
                     : BigDecimal.ZERO;
 
-            BigDecimal precio;
+            BigDecimal precio = obtenerPrecio(
+                    precios.get(i), producto, formaPago);
+            String descripcion = obtenerDescripcion(
+                    descripciones.get(i), producto);
+            BigDecimal alicuotaIva = obtenerAlicuota(
+                    alicuotasIva.get(i), producto);
 
-            if (precios != null
-                    && i < precios.size()
-                    && precios.get(i) != null) {
-
-                precio = precios.get(i);
-
-            } else {
-
-                precio = producto.getPrecioSegunFormaPago(formaPago);
-            }
+            validarDetalle(cantidad, precio, descuento, alicuotaIva);
 
             DetallePresupuesto detalle = new DetallePresupuesto();
             detalle.setProducto(producto);
+            detalle.setDescripcion(descripcion);
             detalle.setCantidad(cantidad);
             detalle.setPrecioUnitario(precio);
             detalle.setDescuentoPct(descuento);
-            detalle.setAlicuotaIva(producto.getTipoIva().getPorcentaje());
+            detalle.setAlicuotaIva(alicuotaIva);
             detalle.calcularSubtotal();
 
             presupuesto.agregarDetalle(detalle);
@@ -277,6 +279,8 @@ public class PresupuestoService {
                                   List<Integer> cantidades,
                                   List<BigDecimal> descuentos,
                                   List<BigDecimal> precios,
+                                  List<String> descripciones,
+                                  List<BigDecimal> alicuotasIva,
                                   List<Long> actualizarPrecioProducto,
                                   FormaPago formaPago,
                                   LocalDate fechaValidez,
@@ -323,14 +327,24 @@ public class PresupuestoService {
 
         presupuesto.setNotaTipoCambio(notaTipoCambio);
 
+        if (productoIds == null || productoIds.isEmpty()
+                || cantidades == null || precios == null
+                || descripciones == null || alicuotasIva == null
+                || productoIds.size() != cantidades.size()
+                || productoIds.size() != precios.size()
+                || productoIds.size() != descripciones.size()
+                || productoIds.size() != alicuotasIva.size()) {
+            throw new IllegalArgumentException("Datos inconsistentes");
+        }
+
         presupuestoRepo.saveAndFlush(presupuesto);
 
 
 
         for (int i = 0; i < productoIds.size(); i++) {
 
-            Producto producto = productoRepo.findById(productoIds.get(i))
-                    .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado"));
+            Long productoId = productoIds.get(i);
+            Producto producto = buscarProductoOpcional(productoId);
 
             Integer cantidad = cantidades.get(i);
             if (cantidad == null || cantidad <= 0) continue;
@@ -338,14 +352,17 @@ public class PresupuestoService {
             BigDecimal descuento = (descuentos != null && i < descuentos.size())
                     ? descuentos.get(i) : BigDecimal.ZERO;
 
-            BigDecimal precio;
-            if (precios != null && i < precios.size() && precios.get(i) != null) {
-                precio = precios.get(i);
-            } else {
-                precio = producto.getPrecioSegunFormaPago(formaPago);
-            }
+            BigDecimal precio = obtenerPrecio(
+                    precios.get(i), producto, formaPago);
+            String descripcion = obtenerDescripcion(
+                    descripciones.get(i), producto);
+            BigDecimal alicuotaIva = obtenerAlicuota(
+                    alicuotasIva.get(i), producto);
 
-            if (actualizarPrecioProducto != null
+            validarDetalle(cantidad, precio, descuento, alicuotaIva);
+
+            if (producto != null
+                    && actualizarPrecioProducto != null
                     && actualizarPrecioProducto.contains(producto.getId())) {
 
                 switch (formaPago) {
@@ -375,10 +392,11 @@ public class PresupuestoService {
 
             DetallePresupuesto detalle = new DetallePresupuesto();
             detalle.setProducto(producto);
+            detalle.setDescripcion(descripcion);
             detalle.setCantidad(cantidad);
             detalle.setPrecioUnitario(precio);
             detalle.setDescuentoPct(descuento);
-            detalle.setAlicuotaIva(producto.getTipoIva().getPorcentaje());
+            detalle.setAlicuotaIva(alicuotaIva);
             detalle.calcularSubtotal();
 
             presupuesto.agregarDetalle(detalle);
@@ -397,11 +415,14 @@ public class PresupuestoService {
         for (Venta venta : ventas) {
             if (venta.getEstado() == Venta.Estado.COMPLETADA) {
                 for (VentaItem item : venta.getItems()) {
-                    movimientoService.registrarDevolucion(
-                            item.getProducto().getId(),
-                            item.getCantidad(),
-                            "Anulación por edición de presupuesto " + presupuesto.getCodigo()
-                    );
+                    if (item.getProducto() != null) {
+                        movimientoService.registrarDevolucion(
+                                item.getProducto().getId(),
+                                item.getCantidad(),
+                                "Anulación por edición de presupuesto "
+                                        + presupuesto.getCodigo()
+                        );
+                    }
                 }
                 venta.setEstado(Venta.Estado.ANULADA);
                 ventaRepo.save(venta);
@@ -440,7 +461,8 @@ public class PresupuestoService {
 
             for (DetallePresupuesto detalle : presupuesto.getDetalles()) {
 
-                if (detalle.getProducto().getId().equals(productoId)) {
+                if (detalle.getProducto() != null
+                        && detalle.getProducto().getId().equals(productoId)) {
 
                     BigDecimal precioNuevo;
 
@@ -468,6 +490,79 @@ public class PresupuestoService {
                 presupuesto.calcularTotal();
                 presupuestoRepo.save(presupuesto);
             }
+        }
+    }
+
+    private Producto buscarProductoOpcional(Long productoId) {
+        if (productoId == null || productoId <= 0) {
+            return null;
+        }
+        return productoRepo.findById(productoId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Producto no encontrado: " + productoId));
+    }
+
+    private String obtenerDescripcion(String descripcion, Producto producto) {
+        String valor = descripcion != null ? descripcion.trim() : "";
+        if (valor.isEmpty() && producto != null) {
+            valor = producto.getDescripcion();
+        }
+        if (valor == null || valor.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Todos los ítems deben tener una descripción");
+        }
+        if (valor.length() > 500) {
+            throw new IllegalArgumentException(
+                    "La descripción no puede superar los 500 caracteres");
+        }
+        return valor;
+    }
+
+    private BigDecimal obtenerPrecio(BigDecimal precio,
+                                     Producto producto,
+                                     FormaPago formaPago) {
+        if (precio != null) {
+            return precio;
+        }
+        if (producto != null) {
+            return producto.getPrecioSegunFormaPago(formaPago);
+        }
+        throw new IllegalArgumentException(
+                "Todos los ítems manuales deben tener precio");
+    }
+
+    private BigDecimal obtenerAlicuota(BigDecimal alicuota,
+                                       Producto producto) {
+        if (alicuota != null) {
+            return alicuota;
+        }
+        if (producto != null && producto.getTipoIva() != null) {
+            return producto.getTipoIva().getPorcentaje();
+        }
+        return BigDecimal.ZERO;
+    }
+
+    private void validarDetalle(Integer cantidad,
+                                BigDecimal precio,
+                                BigDecimal descuento,
+                                BigDecimal alicuotaIva) {
+        if (cantidad == null || cantidad <= 0) {
+            throw new IllegalArgumentException(
+                    "Todas las cantidades deben ser mayores a cero");
+        }
+        if (precio == null || precio.signum() < 0) {
+            throw new IllegalArgumentException(
+                    "Todos los precios deben ser válidos");
+        }
+        if (descuento == null || descuento.signum() < 0
+                || descuento.compareTo(BigDecimal.valueOf(100)) > 0) {
+            throw new IllegalArgumentException(
+                    "Los descuentos deben estar entre 0 y 100");
+        }
+        if (alicuotaIva == null || alicuotaIva.signum() < 0
+                || alicuotaIva.compareTo(BigDecimal.valueOf(100)) > 0) {
+            throw new IllegalArgumentException(
+                    "La alícuota de IVA debe estar entre 0 y 100");
         }
     }
 

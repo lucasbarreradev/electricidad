@@ -137,7 +137,7 @@ public class RemitoImpresionService {
         clienteCell.setBorder(Rectangle.BOX);
         clienteCell.setPadding(5);
 
-        String nombreCliente = "__________________";
+        String nombreCliente = "Consumidor Final";
         if (remito.getCliente() != null) {
             nombreCliente = remito.getCliente().getNombre() + " " + remito.getCliente().getApellido();
         }
@@ -284,7 +284,7 @@ public class RemitoImpresionService {
             itemsTable.addCell(cantCell);
 
             // Descripción
-            String descripcion = item.getProducto().getDescripcion();
+            String descripcion = item.getDescripcionMostrada();
 
             PdfPCell descCell = new PdfPCell(new Phrase(descripcion, font));
             descCell.setBorder(Rectangle.BOX);

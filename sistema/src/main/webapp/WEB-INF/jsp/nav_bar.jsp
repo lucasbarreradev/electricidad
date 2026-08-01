@@ -37,6 +37,14 @@
 
             <!-- Nav Item - Ventas -->
                                     <li class="nav-item">
+                                        <a class="nav-link" href="<c:url value='/remitos' />">
+                                            <i class="fa-solid fa-file-signature"></i>
+                                            <span>Remitos</span>
+                                        </a>
+                                    </li>
+
+            <!-- Nav Item - Ventas -->
+                                    <li class="nav-item">
                                         <a class="nav-link" href="<c:url value='/ventas' />">
                                             <i class="fa-solid fa-cart-arrow-down"></i>
                                             <span>Ventas</span>

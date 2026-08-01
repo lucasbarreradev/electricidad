@@ -52,7 +52,13 @@
                         <div class="card shadow mb-4">
                             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                                 <span>📦 Detalles del Presupuesto</span>
-                                <small class="badge bg-light text-dark">Paso 2: Agregar productos</small>
+                                <div>
+                                    <button type="button" class="btn btn-light btn-sm mr-2"
+                                            data-toggle="modal" data-target="#modalItemManual">
+                                        ✍️ Agregar ítem manual
+                                    </button>
+                                    <small class="badge bg-light text-dark">Paso 2: Agregar ítems</small>
+                                </div>
                             </div>
                             <div class="card-body">
 
@@ -112,21 +118,22 @@
                                             <th class="text-center">Cant.</th>
                                             <th class="text-end">Precio Unit.</th>
                                             <th class="text-center">Desc. %</th>
+                                            <th class="text-center">IVA %</th>
                                             <th class="text-end">Subtotal</th>
                                             <th class="text-center" style="width: 60px;"></th>
                                         </tr>
                                         </thead>
                                         <tbody id="detallePresupuesto">
                                         <tr>
-                                            <td colspan="6" class="text-center text-muted py-4">
-                                                No hay productos agregados.
+                                            <td colspan="7" class="text-center text-muted py-4">
+                                                No hay ítems agregados.
                                             </td>
                                         </tr>
                                         </tbody>
 
                                         <tfoot class="table-secondary">
                                             <tr>
-                                                <td colspan="4" class="fw-bold text-end">SUBTOTAL:</td>
+                                                <td colspan="5" class="fw-bold text-end">SUBTOTAL:</td>
                                                 <td class="text-end fw-bold fs-5 text-dark">
                                                     <span id="simboloSubtotal">$</span><span id="subtotalEfectivo">0.00</span>
                                                 </td>
@@ -166,7 +173,7 @@
                                     <!-- CLIENTE -->
                                     <div class="mb-3">
                                         <label class="form-label fw-semibold">
-                                            <small class="badge bg-secondary text-dark">Paso 1</small>
+                                            <small class="badge bg-secondary text-white">Paso 1</small>
                                             Cliente (opcional)
                                         </label>
                                         <input type="text"
@@ -208,7 +215,7 @@
 
                                     <!-- RESUMEN -->
                                     <div class="mb-3">
-                                        <small class="text-muted">Productos agregados:</small>
+                                        <small class="text-muted">Ítems agregados:</small>
                                         <div class="fs-5 fw-bold text-primary">
                                             <span id="cantidadItems">0</span> items
                                         </div>
@@ -332,7 +339,7 @@
                                     </button>
 
                                     <small class="text-muted d-block text-center mt-2" id="mensajeAyuda">
-                                        ⬆️ Agregá productos primero
+                                                ⬆️ Agregá productos o ítems manuales
                                     </small>
 
                                     <a href="${pageContext.request.contextPath}/presupuestos"
@@ -350,36 +357,97 @@
     </div>
 </div>
 
-<!-- ==========================================
-     DATOS DE EDICIÓN (pasados desde el servidor)
-     Usamos JSON embebido para precargar los items
-========================================== -->
-<c:if test="${not empty presupuesto}">
-<script>
-const itemsExistentes = [
-    <c:forEach items="${presupuesto.detalles}" var="detalle" varStatus="status">
-    {
-        productoId: ${detalle.producto.id},
-        descripcion: "${fn:escapeXml(detalle.producto.descripcion)}",
-        cantidad: ${detalle.cantidad},
-        precioContado: ${not empty detalle.producto.precioContado ? detalle.producto.precioContado : 0},
-        precioTarjeta: ${not empty detalle.producto.precioTarjeta ? detalle.producto.precioTarjeta : 0},
-        precioCC: ${not empty detalle.producto.precioCuentaCorriente ? detalle.producto.precioCuentaCorriente : 0},
-        descuento: ${not empty detalle.descuentoPct ? detalle.descuentoPct : 0},
-        precioManual: ${not empty detalle.precioUnitario ? detalle.precioUnitario : 0} // ← precio guardado
-    }<c:if test="${!status.last}">,</c:if>
-    </c:forEach>
-];
-</script>
-</c:if>
+<!-- ÍTEM MANUAL -->
+<div class="modal fade" id="modalItemManual" tabindex="-1" role="dialog"
+     aria-labelledby="modalItemManualLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalItemManualLabel">Agregar ítem manual</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="formItemManual">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Descripción *</label>
+                        <textarea id="manualDescripcion" class="form-control"
+                                  rows="3" maxlength="500" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Cantidad *</label>
+                            <input type="number" id="manualCantidad" class="form-control"
+                                   min="1" value="1" required>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Precio unitario *</label>
+                            <input type="number" id="manualPrecio" class="form-control"
+                                   min="0" step="0.01" required>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Descuento (%)</label>
+                            <input type="number" id="manualDescuento" class="form-control"
+                                   min="0" max="100" step="0.01" value="0">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>IVA (%)</label>
+                            <input type="number" id="manualIva" class="form-control"
+                                   min="0" max="100" step="0.01" value="21">
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        El precio debe ingresarse en la moneda seleccionada para el presupuesto.
+                    </small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar al presupuesto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-<c:if test="${empty presupuesto}">
-<script>
-const itemsExistentes = [];
-</script>
-</c:if>
+<jsp:include page="/WEB-INF/jsp/foot.jsp"/>
+
+<!-- Datos seguros para reconstruir los renglones al editar. -->
+<div id="itemsExistentesData" class="d-none">
+    <c:if test="${not empty presupuesto}">
+        <c:forEach items="${presupuesto.detalles}" var="detalle">
+            <div class="item-existente"
+                 data-producto-id="${detalle.producto != null ? detalle.producto.id : 0}"
+                 data-cantidad="${detalle.cantidad}"
+                 data-precio-contado="${detalle.producto != null && not empty detalle.producto.precioContado ? detalle.producto.precioContado : detalle.precioUnitario}"
+                 data-precio-tarjeta="${detalle.producto != null && not empty detalle.producto.precioTarjeta ? detalle.producto.precioTarjeta : detalle.precioUnitario}"
+                 data-precio-cc="${detalle.producto != null && not empty detalle.producto.precioCuentaCorriente ? detalle.producto.precioCuentaCorriente : detalle.precioUnitario}"
+                 data-descuento="${not empty detalle.descuentoPct ? detalle.descuentoPct : 0}"
+                 data-iva="${not empty detalle.alicuotaIva ? detalle.alicuotaIva : 0}"
+                 data-manual="${detalle.producto == null}"
+                 data-precio-manual="${not empty detalle.precioUnitario ? detalle.precioUnitario : 0}">
+                <textarea class="descripcion-existente"><c:out value="${detalle.descripcionMostrada}"/></textarea>
+            </div>
+        </c:forEach>
+    </c:if>
+</div>
 
 <script>
+const itemsExistentes = Array.from(
+    document.querySelectorAll("#itemsExistentesData .item-existente")
+).map(elemento => ({
+    productoId: Number(elemento.dataset.productoId),
+    descripcion: elemento.querySelector(".descripcion-existente").value,
+    cantidad: Number(elemento.dataset.cantidad),
+    precioContado: Number(elemento.dataset.precioContado),
+    precioTarjeta: Number(elemento.dataset.precioTarjeta),
+    precioCC: Number(elemento.dataset.precioCc),
+    descuento: Number(elemento.dataset.descuento),
+    alicuotaIva: Number(elemento.dataset.iva),
+    manual: elemento.dataset.manual === "true",
+    precioManual: Number(elemento.dataset.precioManual)
+}));
+
 let monedaActual = '${not empty presupuesto.moneda ? presupuesto.moneda : "ARS"}';
 let simboloMoneda = monedaActual === 'USD' ? 'U$D ' : '$ ';
 let tipoCambio = ${not empty presupuesto.tipoCambio ? presupuesto.tipoCambio : 1};
@@ -391,6 +459,7 @@ let productoDescripcion = "";
 let precioContado = 0;
 let precioTarjeta = 0;
 let precioCC = 0;
+let alicuotaIvaSeleccionada = 0;
 
 // ==========================================
 // PRECARGAR ITEMS AL EDITAR
@@ -404,6 +473,8 @@ if (itemsExistentes && itemsExistentes.length > 0) {
         precioTarjeta: parseFloat(i.precioTarjeta),
         precioCC: parseFloat(i.precioCC),
         descuento: parseFloat(i.descuento),
+        alicuotaIva: parseFloat(i.alicuotaIva),
+        manual: Boolean(i.manual),
         precioManual: parseFloat(i.precioManual) // ← precio guardado en el detalle
     }));
     renderTabla();
@@ -447,6 +518,8 @@ function agregarProducto() {
             precioTarjeta: precioTarjeta,
             precioCC: precioCC,
             descuento: descuentoPct,
+            alicuotaIva: alicuotaIvaSeleccionada,
+            manual: false,
             actualizarProducto: false
         });
     }
@@ -465,6 +538,7 @@ function limpiarSeleccion() {
     document.getElementById("cantidad").value = "1";
     document.getElementById("descuento").value = "0";
     document.getElementById("textoPrecio").textContent = "";
+    alicuotaIvaSeleccionada = 0;
     document.getElementById("buscarProducto").focus();
 }
 
@@ -480,10 +554,10 @@ function renderTabla() {
 
     if (items.length === 0) {
         tbody.innerHTML =
-            "<tr><td colspan='6' class='text-center text-muted py-4'>" +
-            "No hay productos. Buscá y agregá productos arriba.</td></tr>";
+            "<tr><td colspan='7' class='text-center text-muted py-4'>" +
+            "No hay ítems. Buscá un producto o agregá un ítem manual.</td></tr>";
         document.getElementById("btnGuardar").disabled = true;
-        document.getElementById("mensajeAyuda").textContent = "⬆️ Agregá productos primero";
+        document.getElementById("mensajeAyuda").textContent = "⬆️ Agregá productos o ítems manuales";
         document.getElementById("cantidadItems").textContent = "0";
         return;
     }
@@ -504,7 +578,12 @@ function renderTabla() {
 
         tbody.innerHTML +=
             "<tr>" +
-                "<td><strong>" + item.descripcion + "</strong></td>" +
+                "<td style='min-width:240px'>" +
+                    "<textarea class='form-control form-control-sm' rows='2' maxlength='500' " +
+                        "onchange='setDescripcion(" + index + ", this.value)'>" +
+                        escaparHtml(item.descripcion) + "</textarea>" +
+                    (item.manual ? "<small class='text-primary'>Ítem manual</small>" : "") +
+                "</td>" +
                 "<td class='text-center'>" +
                     "<div class='input-group input-group-sm' style='width: 100px; margin: auto;'>" +
                         "<button type='button' class='btn btn-outline-secondary btn-sm' onclick='cambiarCantidad(" + index + ", -1)'>-</button>" +
@@ -521,7 +600,7 @@ function renderTabla() {
                                "min='0' step='0.01' " +
                                "onchange='setPrecio(" + index + ", this.value)'>" +
                     "</div>" +
-                    (item.precioEditado ?
+                    (item.precioEditado && item.productoId > 0 ?
                         "<div class='form-check mt-1'>" +
                             "<input class='form-check-input' type='checkbox' " +
                                    (item.actualizarProducto ? "checked" : "") + " " +
@@ -534,15 +613,26 @@ function renderTabla() {
                         : ""
                     ) +
                 "</td>" +
-                "<td class='text-center'>" + (item.descuento > 0 ? item.descuento + "%" : "-") + "</td>" +
+                "<td class='text-center' style='width:100px'>" +
+                    "<input type='number' class='form-control form-control-sm text-center' " +
+                        "value='" + item.descuento + "' min='0' max='100' step='0.01' " +
+                        "onchange='setDescuento(" + index + ", this.value)'>" +
+                "</td>" +
+                "<td class='text-center' style='width:100px'>" +
+                    "<input type='number' class='form-control form-control-sm text-center' " +
+                        "value='" + item.alicuotaIva + "' min='0' max='100' step='0.01' " +
+                        "onchange='setIva(" + index + ", this.value)'>" +
+                "</td>" +
                 "<td class='text-end fw-semibold'>" + simboloMoneda + subtotalMostrar.toFixed(2) + "</td>" +
                 "<td class='text-center'><button type='button' class='btn btn-danger btn-sm' onclick='eliminarItem(" + index + ")'>✕</button></td>" +
             "</tr>";
 
         hidden.innerHTML +=
             "<input type='hidden' name='productoIds' value='" + item.productoId + "'>" +
+            "<input type='hidden' name='descripciones' value='" + escaparHtml(item.descripcion) + "'>" +
             "<input type='hidden' name='cantidades' value='" + item.cantidad + "'>" +
             "<input type='hidden' name='descuentos' value='" + item.descuento + "'>" +
+            "<input type='hidden' name='alicuotasIva' value='" + item.alicuotaIva + "'>" +
             "<input type='hidden' name='precios' value='" + precioBase.toFixed(2) + "'>";
 
         if (item.precioEditado && item.actualizarProducto) {
@@ -554,6 +644,15 @@ function renderTabla() {
 
     document.getElementById("cantidadItems").textContent = items.length;
     verificarHabilitarBoton();
+}
+
+function escaparHtml(valor) {
+    return String(valor == null ? '' : valor)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 // ==========================================
@@ -575,6 +674,40 @@ function setCantidad(index, valor) {
     actualizarPreciosFinal();
 }
 
+function setDescripcion(index, valor) {
+    let descripcion = String(valor || '').trim();
+    if (!descripcion) {
+        alert("⚠️ La descripción no puede quedar vacía");
+        renderTabla();
+        return;
+    }
+    items[index].descripcion = descripcion;
+    renderTabla();
+}
+
+function setDescuento(index, valor) {
+    let descuento = parseFloat(valor);
+    if (isNaN(descuento) || descuento < 0 || descuento > 100) {
+        alert("⚠️ El descuento debe estar entre 0 y 100");
+        renderTabla();
+        return;
+    }
+    items[index].descuento = descuento;
+    renderTabla();
+    actualizarPreciosFinal();
+}
+
+function setIva(index, valor) {
+    let iva = parseFloat(valor);
+    if (isNaN(iva) || iva < 0 || iva > 100) {
+        alert("⚠️ El IVA debe estar entre 0 y 100");
+        renderTabla();
+        return;
+    }
+    items[index].alicuotaIva = iva;
+    renderTabla();
+}
+
 function setPrecio(index, valor) {
 
     let nuevoPrecio = parseFloat(valor);
@@ -591,7 +724,7 @@ function setPrecio(index, valor) {
     }
 
     items[index].precioEditado = true;
-    items[index].actualizarProducto = true;
+    items[index].actualizarProducto = items[index].productoId > 0;
 
     renderTabla();
     actualizarPreciosFinal();
@@ -601,7 +734,7 @@ function setPrecio(index, valor) {
 // ELIMINAR ITEM
 // ==========================================
 function eliminarItem(index) {
-    if (confirm("¿Eliminar este producto del presupuesto?")) {
+    if (confirm("¿Eliminar este ítem del presupuesto?")) {
         items.splice(index, 1);
         renderTabla();
         actualizarPreciosFinal();
@@ -665,14 +798,14 @@ function verificarHabilitarBoton() {
         document.getElementById("mensajeAyuda").className = "text-warning d-block text-center mt-2";
     } else {
         document.getElementById("btnGuardar").disabled = true;
-        document.getElementById("mensajeAyuda").textContent = "⬆️ Agregá productos primero";
+        document.getElementById("mensajeAyuda").textContent = "⬆️ Agregá productos o ítems manuales";
         document.getElementById("mensajeAyuda").className = "text-muted d-block text-center mt-2";
     }
 }
 
 function validarPresupuesto() {
     if (items.length === 0) {
-        alert("⚠️ Agregá al menos un producto");
+        alert("⚠️ Agregá al menos un ítem");
         return false;
     }
     if (!document.getElementById("formaPago").value) {
@@ -714,7 +847,8 @@ document.getElementById("buscarProducto").addEventListener("keyup", function() {
                         "data-stock='" + stock + "' " +
                         "data-precio-contado='" + (p.precioContado || 0) + "' " +
                         "data-precio-tarjeta='" + (p.precioTarjeta || 0) + "' " +
-                        "data-precio-cc='" + (p.precioCuentaCorriente || 0) + "'>" +
+                        "data-precio-cc='" + (p.precioCuentaCorriente || 0) + "' " +
+                        "data-iva='" + ivaDesdeTipo(p.tipoIva) + "'>" +
                         "<strong>" + (p.descripcion || 'Sin nombre') + "</strong>" +
                         "<br><small class='text-muted'>" +
                             "Efectivo: $" + (p.precioContado || 0) +
@@ -738,16 +872,27 @@ document.getElementById("resultados").addEventListener("click", function(e) {
         item.dataset.stock,
         item.dataset.precioContado,
         item.dataset.precioTarjeta,
-        item.dataset.precioCc
+        item.dataset.precioCc,
+        item.dataset.iva
     );
 });
 
-function seleccionarProducto(id, descripcion, stock, pContado, pTarjeta, pCC) {
+function ivaDesdeTipo(tipoIva) {
+    switch (tipoIva) {
+        case "IVA_21": return 21;
+        case "IVA_10_5": return 10.5;
+        case "IVA_27": return 27;
+        default: return 0;
+    }
+}
+
+function seleccionarProducto(id, descripcion, stock, pContado, pTarjeta, pCC, iva) {
     productoSeleccionado = Number(id);
     productoDescripcion = descripcion;
     precioContado = parseFloat(pContado);
     precioTarjeta = parseFloat(pTarjeta);
     precioCC = parseFloat(pCC || 0);
+    alicuotaIvaSeleccionada = parseFloat(iva || 0);
 
     document.getElementById("buscarProducto").value = descripcion;
     document.getElementById("stock").value = Number(stock);
@@ -759,6 +904,51 @@ function seleccionarProducto(id, descripcion, stock, pContado, pTarjeta, pCC) {
     document.getElementById("resultados").innerHTML = "";
     document.getElementById("cantidad").focus();
 }
+
+document.getElementById("formItemManual").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const descripcion = document.getElementById("manualDescripcion").value.trim();
+    const cantidad = parseInt(document.getElementById("manualCantidad").value, 10);
+    const precioIngresado = parseFloat(document.getElementById("manualPrecio").value);
+    const descuento = parseFloat(document.getElementById("manualDescuento").value || 0);
+    const iva = parseFloat(document.getElementById("manualIva").value || 0);
+
+    if (!descripcion || !Number.isInteger(cantidad) || cantidad <= 0 ||
+            isNaN(precioIngresado) || precioIngresado < 0 ||
+            isNaN(descuento) || descuento < 0 || descuento > 100 ||
+            isNaN(iva) || iva < 0 || iva > 100) {
+        alert("Completá una descripción y valores válidos para el ítem manual.");
+        return;
+    }
+
+    const precioBase = monedaActual === "USD"
+        ? precioIngresado * tipoCambio
+        : precioIngresado;
+
+    items.push({
+        productoId: 0,
+        descripcion: descripcion,
+        cantidad: cantidad,
+        precioContado: precioBase,
+        precioTarjeta: precioBase,
+        precioCC: precioBase,
+        precioManual: precioBase,
+        precioEditado: true,
+        actualizarProducto: false,
+        descuento: descuento,
+        alicuotaIva: iva,
+        manual: true
+    });
+
+    this.reset();
+    document.getElementById("manualCantidad").value = "1";
+    document.getElementById("manualDescuento").value = "0";
+    document.getElementById("manualIva").value = "21";
+    $("#modalItemManual").modal("hide");
+    renderTabla();
+    actualizarPreciosFinal();
+});
 
 // ==========================================
 // BÚSQUEDA DE CLIENTES
@@ -815,12 +1005,6 @@ document.addEventListener('click', function(e) {
 function cambiarMoneda(moneda) {
     monedaActual = moneda;
     simboloMoneda = moneda === 'USD' ? 'U$D ' : '$ ';
-
-    // Limpiar flags de edición al cambiar moneda
-    items.forEach(item => {
-        item.precioEditado = false;
-        item.precioManual = null;
-    });
 
     document.getElementById('tipoCambioSection').style.display =
         moneda === 'USD' ? 'block' : 'none';
