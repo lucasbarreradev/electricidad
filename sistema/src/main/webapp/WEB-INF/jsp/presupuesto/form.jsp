@@ -373,7 +373,7 @@
                     <div class="form-group">
                         <label>Descripción *</label>
                         <textarea id="manualDescripcion" class="form-control"
-                                  rows="3" maxlength="500" required></textarea>
+                                  rows="5" required></textarea>
                     </div>
                     <div class="form-row">
                         <div class="form-group col-md-6">
@@ -579,7 +579,7 @@ function renderTabla() {
         tbody.innerHTML +=
             "<tr>" +
                 "<td style='min-width:240px'>" +
-                    "<textarea class='form-control form-control-sm' rows='2' maxlength='500' " +
+                    "<textarea class='form-control form-control-sm' rows='3' " +
                         "onchange='setDescripcion(" + index + ", this.value)'>" +
                         escaparHtml(item.descripcion) + "</textarea>" +
                     (item.manual ? "<small class='text-primary'>Ítem manual</small>" : "") +

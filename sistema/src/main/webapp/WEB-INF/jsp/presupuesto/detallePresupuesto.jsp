@@ -5,6 +5,39 @@
 <html lang="es">
 <head>
     <jsp:include page="/WEB-INF/jsp/head.jsp"/>
+    <style>
+        .presupuesto-items-wrapper {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .presupuesto-items {
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .presupuesto-items .item-descripcion {
+            width: 55%;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .presupuesto-items .item-cantidad {
+            width: 10%;
+        }
+
+        .presupuesto-items .item-importe {
+            width: 17.5%;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 767px) {
+            .presupuesto-items {
+                min-width: 650px;
+            }
+        }
+    </style>
 </head>
 <body id="page-top">
 <div id="wrapper">
@@ -138,28 +171,29 @@
                             <c:set var="tipoCambio"
                                    value="${not empty presupuesto.tipoCambio ? presupuesto.tipoCambio : 1}"/>
 
-                            <table class="table table-hover table-striped">
+                            <div class="presupuesto-items-wrapper">
+                            <table class="table table-hover table-striped presupuesto-items">
                                 <thead class="table-dark">
                                 <tr>
-                                    <th>Producto</th>
-                                    <th class="text-center">Cant.</th>
-                                    <th class="text-end">Precio Unit.</th>
-                                    <th class="text-end">Subtotal</th>
+                                    <th class="item-descripcion">Producto / descripción</th>
+                                    <th class="text-center item-cantidad">Cant.</th>
+                                    <th class="text-end item-importe">Precio Unit.</th>
+                                    <th class="text-end item-importe">Subtotal</th>
                                 </tr>
                                 </thead>
 
                                 <tbody>
                                 <c:forEach items="${presupuesto.detalles}" var="d">
                                     <tr>
-                                        <td>${d.descripcionMostrada}</td>
-                                        <td class="text-center">${d.cantidad}</td>
-                                        <td class="text-end">
+                                        <td class="item-descripcion"><c:out value="${d.descripcionMostrada}"/></td>
+                                        <td class="text-center item-cantidad">${d.cantidad}</td>
+                                        <td class="text-end item-importe">
                                             ${simboloMoneda}
                                             <fmt:formatNumber
                                                 value="${esUSD ? d.precioUnitario / tipoCambio : d.precioUnitario}"
                                                 minFractionDigits="2"/>
                                         </td>
-                                        <td class="text-end fw-semibold">
+                                        <td class="text-end fw-semibold item-importe">
                                             ${simboloMoneda}
                                             <fmt:formatNumber
                                                 value="${esUSD ? d.subtotal / tipoCambio : d.subtotal}"
@@ -224,6 +258,7 @@
                                 </c:choose>
                                 </tfoot>
                             </table>
+                            </div>
 
 
 

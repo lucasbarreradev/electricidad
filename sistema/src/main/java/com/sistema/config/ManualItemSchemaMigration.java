@@ -30,6 +30,7 @@ public class ManualItemSchemaMigration implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         for (String table : ITEM_TABLES) {
             permitirProductoNulo(table);
+            ampliarDescripcion(table);
         }
     }
 
@@ -45,6 +46,22 @@ public class ManualItemSchemaMigration implements ApplicationRunner {
             jdbcTemplate.execute(
                     "ALTER TABLE `" + table
                             + "` MODIFY COLUMN `producto_id` BIGINT NULL");
+        }
+    }
+
+    private void ampliarDescripcion(String table) {
+        List<String> dataTypes = jdbcTemplate.queryForList(
+                "SELECT DATA_TYPE FROM information_schema.COLUMNS "
+                        + "WHERE TABLE_SCHEMA = DATABASE() "
+                        + "AND TABLE_NAME = ? AND COLUMN_NAME = 'descripcion'",
+                String.class,
+                table);
+
+        if (!dataTypes.isEmpty()
+                && !"longtext".equalsIgnoreCase(dataTypes.get(0))) {
+            jdbcTemplate.execute(
+                    "ALTER TABLE `" + table
+                            + "` MODIFY COLUMN `descripcion` LONGTEXT NULL");
         }
     }
 }

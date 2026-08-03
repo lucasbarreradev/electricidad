@@ -32,7 +32,8 @@ public class VentaItem {
     @JoinColumn(name = "producto_id", nullable = true)
     private Producto producto;
 
-    @Column(name = "descripcion", length = 500)
+    @Lob
+    @Column(name = "descripcion", columnDefinition = "LONGTEXT")
     private String descripcion;
 
     // Cantidad vendida

@@ -71,4 +71,26 @@ class PresupuestoManualServiceTests {
         assertThat(presupuesto.getTotal()).isEqualByComparingTo("270.00");
         verifyNoInteractions(productoRepo, clienteRepo, movimientoService);
     }
+
+    @Test
+    void aceptaUnaDescripcionManualExtensa() {
+        String descripcionExtensa = "Detalle completo del trabajo a realizar. ".repeat(500);
+
+        Presupuesto presupuesto = service.crear(
+                null,
+                FormaPago.CONTADO,
+                List.of(0L),
+                List.of(1),
+                List.of(BigDecimal.ZERO),
+                LocalDate.now().plusDays(15),
+                Presupuesto.Moneda.ARS,
+                null,
+                null,
+                List.of(new BigDecimal("100.00")),
+                List.of(descripcionExtensa),
+                List.of(new BigDecimal("21.00")));
+
+        assertThat(presupuesto.getDetalles().get(0).getDescripcionMostrada())
+                .isEqualTo(descripcionExtensa.trim());
+    }
 }

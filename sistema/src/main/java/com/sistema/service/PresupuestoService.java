@@ -511,10 +511,6 @@ public class PresupuestoService {
             throw new IllegalArgumentException(
                     "Todos los ítems deben tener una descripción");
         }
-        if (valor.length() > 500) {
-            throw new IllegalArgumentException(
-                    "La descripción no puede superar los 500 caracteres");
-        }
         return valor;
     }
 
