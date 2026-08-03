@@ -15,6 +15,8 @@ public interface PresupuestoRepository extends JpaRepository<Presupuesto, Long> 
 
     Optional<Presupuesto> findByCodigo(String codigo);
 
+    boolean existsByCodigo(String codigo);
+
     List<Presupuesto> findAllByOrderByFechaDesc();
 
     List<Presupuesto> findByEstadoOrderByFechaDesc(EstadoPresupuesto estado);

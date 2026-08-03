@@ -266,8 +266,14 @@ public class PresupuestoService {
     // GENERAR CÓDIGO SECUENCIAL
     // ==========================================
     private String generarCodigo() {
-        Long ultimo = presupuestoRepo.count();
-        return String.format("%04d", ultimo + 1);
+        long siguiente = presupuestoRepo.count() + 1;
+        String codigo = String.format("%04d", siguiente);
+
+        while (presupuestoRepo.existsByCodigo(codigo)) {
+            codigo = String.format("%04d", ++siguiente);
+        }
+
+        return codigo;
     }
 
     // ==========================================
@@ -432,14 +438,21 @@ public class PresupuestoService {
 
 
     // ==========================================
-    // ELIMINAR (solo PENDIENTE)
+    // ELIMINAR PRESUPUESTO SIN VENTA ASOCIADA
     // ==========================================
     public void eliminar(Long id) {
         Presupuesto presupuesto = buscarPorId(id);
 
-        if (presupuesto.getEstado() != EstadoPresupuesto.PENDIENTE) {
+        if (presupuesto.getEstado() != EstadoPresupuesto.PENDIENTE
+                && presupuesto.getEstado() != EstadoPresupuesto.RECHAZADO) {
             throw new IllegalArgumentException(
-                    "Solo se puede eliminar un presupuesto PENDIENTE");
+                    "Solo se puede eliminar un presupuesto pendiente o rechazado");
+        }
+
+        if (!ventaRepo.findAllByPresupuestoCodigo(
+                presupuesto.getCodigo()).isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No se puede eliminar porque tiene una venta asociada");
         }
 
         presupuestoRepo.delete(presupuesto);

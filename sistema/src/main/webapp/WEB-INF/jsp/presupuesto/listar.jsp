@@ -133,10 +133,24 @@
                                                     </span>
                                                 </td>
                                                 <td class="text-center">
-                                                    <a class="btn btn-sm btn-info"
-                                                       href="${pageContext.request.contextPath}/presupuestos/detalle/${p.id}">
-                                                        Ver
-                                                    </a>
+                                                    <div class="d-inline-flex align-items-center">
+                                                        <a class="btn btn-sm btn-info"
+                                                           href="${pageContext.request.contextPath}/presupuestos/detalle/${p.id}">
+                                                            Ver
+                                                        </a>
+                                                        <c:if test="${p.estado == 'PENDIENTE' || p.estado == 'RECHAZADO'}">
+                                                            <form action="${pageContext.request.contextPath}/presupuestos/${p.id}/eliminar"
+                                                                  method="post"
+                                                                  class="ml-1 mb-0"
+                                                                  onsubmit="return confirm('¿Eliminar definitivamente este presupuesto? Esta acción no se puede deshacer.')">
+                                                                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                                                <button type="submit" class="btn btn-sm btn-danger"
+                                                                        title="Eliminar presupuesto">
+                                                                    🗑️
+                                                                </button>
+                                                            </form>
+                                                        </c:if>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         </c:forEach>

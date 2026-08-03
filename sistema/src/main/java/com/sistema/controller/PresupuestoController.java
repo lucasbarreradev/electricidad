@@ -301,11 +301,22 @@ public class PresupuestoController {
         return "redirect:/presupuestos/" + id;
     }
 
-
-
     // ==========================================
-    // ELIMINAR (solo PENDIENTE)
+    // ELIMINAR (PENDIENTE O RECHAZADO)
     // ==========================================
+    @PostMapping("/{id}/eliminar")
+    public String eliminar(@PathVariable Long id,
+                           RedirectAttributes ra) {
+        try {
+            presupuestoService.eliminar(id);
+            ra.addFlashAttribute(
+                    "mensaje", "Presupuesto eliminado correctamente");
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        }
+
+        return "redirect:/presupuestos";
+    }
 
     @GetMapping("/{id}/pdf")
     public void generarPdf(

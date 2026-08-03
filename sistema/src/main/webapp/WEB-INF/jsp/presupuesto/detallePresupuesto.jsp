@@ -295,6 +295,18 @@
                                     </form>
                                 </c:if>
 
+                                <!-- ELIMINAR (PENDIENTE O RECHAZADO) -->
+                                <c:if test="${presupuesto.estado == 'PENDIENTE' || presupuesto.estado == 'RECHAZADO'}">
+                                    <form action="${pageContext.request.contextPath}/presupuestos/${presupuesto.id}/eliminar"
+                                          method="post"
+                                          onsubmit="return confirm('¿Eliminar definitivamente este presupuesto? Esta acción no se puede deshacer.')">
+                                        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                                        <button type="submit" class="btn btn-danger">
+                                            🗑️ Eliminar
+                                        </button>
+                                    </form>
+                                </c:if>
+
                                 <!-- PDF (siempre visible) -->
                                 <a href="${pageContext.request.contextPath}/presupuestos/${presupuesto.id}/pdf"
                                    class="btn btn-outline-secondary"
