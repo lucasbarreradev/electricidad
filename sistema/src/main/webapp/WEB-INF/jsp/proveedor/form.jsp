@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -55,40 +56,40 @@
                                     <label>Nombre / Razón Social</label>
                                     <input type="text" name="nombreRazonSocial"
                                            class="form-control"
-                                           value="${proveedor.nombreRazonSocial}" required>
+                                           value="${fn:escapeXml(proveedor.nombreRazonSocial)}" required>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
                                     <label>Teléfono</label>
                                     <input type="text" name="telefono"
                                            class="form-control"
-                                           value="${proveedor.telefono}">
+                                           value="${fn:escapeXml(proveedor.telefono)}">
                                 </div>
 
                                 <div class="col-md-6 mb-3">
                                     <label>Email</label>
                                     <input type="email" name="email"
                                            class="form-control"
-                                           value="${proveedor.email}">
+                                           value="${fn:escapeXml(proveedor.email)}">
                                 </div>
 
                                 <div class="col-md-6 mb-3">
                                                                     <label>Cuit</label>
                                                                     <input type="text" name="cuit"
                                                                            class="form-control"
-                                                                           value="${proveedor.cuit}">
+                                                                           value="${fn:escapeXml(proveedor.cuit)}">
                                                                 </div>
                                 <div class="col-md-6 mb-3">
                                                                     <label>Condición IVA</label>
                                                                     <input type="text" name="condicionIva"
                                                                            class="form-control"
-                                                                           value="${proveedor.condicionIva}">
+                                                                           value="${fn:escapeXml(proveedor.condicionIva)}">
                                                                 </div>
                                   <div class="col-md-6 mb-3">
                                                                       <label>Dirección</label>
                                                                       <input type="text" name="direccion"
                                                                              class="form-control"
-                                                                             value="${proveedor.direccion}">
+                                                                             value="${fn:escapeXml(proveedor.direccion)}">
                                                                   </div>
 
                             </div>

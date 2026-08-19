@@ -180,7 +180,7 @@
                                                id="buscarCliente"
                                                class="form-control"
                                                placeholder="Buscar cliente..."
-                                               value="${not empty presupuesto.cliente ? presupuesto.cliente.nombre.concat(' ').concat(presupuesto.cliente.apellido) : ''}"
+                                               value="${fn:escapeXml(not empty presupuesto.cliente ? presupuesto.cliente.nombre.concat(' ').concat(presupuesto.cliente.apellido) : '')}"
                                                autocomplete="off">
                                         <input type="hidden"
                                                name="clienteId"
@@ -306,7 +306,7 @@
                                                                                                                                       id="notaTipoCambio"
                                                                                                                                       class="form-control"
                                                                                                                                       rows="2"
-                                                                                                                                      maxlength="200">${not empty presupuesto.notaTipoCambio ? presupuesto.notaTipoCambio : ''}</textarea>
+                                                                                                                                      maxlength="200"><c:out value="${not empty presupuesto.notaTipoCambio ? presupuesto.notaTipoCambio : ''}"/></textarea>
                                                                                                                         </div>
 
                                                                             <small class="text-muted">Los precios se convierten automáticamente</small>

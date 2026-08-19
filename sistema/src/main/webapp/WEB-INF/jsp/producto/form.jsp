@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -58,7 +59,7 @@
                                                                 <div class="input-group">
                                                                     <input type="text"
                                                                            class="form-control"
-                                                                           value="${producto.proveedor.nombreRazonSocial}"
+                                                                           value="${fn:escapeXml(producto.proveedor.nombreRazonSocial)}"
                                                                            readonly>
 
                                                                     <input type="hidden" name="proveedorId"
@@ -73,9 +74,11 @@
 
                                 <div class="col-md-6 mb-3">
                                     <label>Descripción</label>
-                                    <input type="text" name="descripcion"
+                                    <input type="text"
+                                           name="descripcion"
                                            class="form-control"
-                                           value="${producto.descripcion}" required>
+                                           value="${fn:escapeXml(producto.descripcion)}"
+                                           required>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
