@@ -5,26 +5,39 @@ import com.sistema.model.Proveedor;
 import com.sistema.repository.MovimientoInventarioRepository;
 import com.sistema.repository.ProductoRepository;
 import com.sistema.repository.ProveedorRepository;
+import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.math.BigInteger;
+import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
 public class ProductoService {
+    private static final int MAX_INTENTOS_SKU = 10;
     private final ProductoRepository productoRepo;
     private final ProveedorRepository proveedorRepository;
     private final MovimientoInventarioRepository movimientoRepo;
     private final PresupuestoService presupuestoService;
+    private final TransactionTemplate guardadoTransaction;
 
     public ProductoService(ProductoRepository productoRepo,
                             ProveedorRepository proveedorRepository,
                            MovimientoInventarioRepository movimientoRepo,
-                           PresupuestoService presupuestoService) {
+                           PresupuestoService presupuestoService,
+                           PlatformTransactionManager transactionManager) {
         this.productoRepo = productoRepo;
         this.proveedorRepository = proveedorRepository;
         this.movimientoRepo = movimientoRepo;
         this.presupuestoService = presupuestoService;
+        this.guardadoTransaction = new TransactionTemplate(transactionManager);
+        this.guardadoTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     public List<Producto> getProductos() {
@@ -38,35 +51,62 @@ public class ProductoService {
     public String generarSku(String descripcion) {
 
         String base = descripcion
-                .toUpperCase()
+                .toUpperCase(Locale.ROOT)
                 .replaceAll("[^A-Z]", "");
 
         String prefijo = base.substring(0, Math.min(4, base.length()));
 
-        long count = productoRepo.countBySkuPrefix(prefijo) + 1;
+        BigInteger siguiente = productoRepo.findSkusByPrefix(prefijo).stream()
+                .map(sku -> sku.substring(prefijo.length() + 1))
+                .filter(numero -> numero.matches("[0-9]+"))
+                .map(BigInteger::new)
+                .max(BigInteger::compareTo)
+                .orElse(BigInteger.ZERO)
+                .add(BigInteger.ONE);
 
-        return prefijo + "-" + String.format("%03d", count);
+        return prefijo + "-" + String.format(Locale.ROOT, "%03d", siguiente);
     }
 
 
 
     public void saveProducto(Producto producto) {
+        boolean generarAutomaticamente = producto.getSku() == null || producto.getSku().isBlank();
 
-        if (producto.getProveedor() != null
-                && producto.getProveedor().getId() != null) {
-
-            Proveedor proveedor = proveedorRepository
-                    .findById(producto.getProveedor().getId())
-                    .orElse(null);
-
-            producto.setProveedor(proveedor);
+        for (int intento = 1; ; intento++) {
+            // Un INSERT fallido puede dejar un ID asignado en la entidad.
+            // Cada intento usa una copia y una transacción independiente.
+            Producto candidato = new Producto();
+            BeanUtils.copyProperties(producto, candidato);
+            try {
+                Producto guardado = guardadoTransaction.execute(status -> {
+                    if (candidato.getProveedor() != null && candidato.getProveedor().getId() != null) {
+                        candidato.setProveedor(proveedorRepository
+                                .findById(candidato.getProveedor().getId()).orElse(null));
+                    }
+                    if (generarAutomaticamente) {
+                        candidato.setSku(generarSku(candidato.getDescripcion()));
+                    }
+                    return productoRepo.saveAndFlush(candidato);
+                });
+                // Actualizar el formulario sólo después de confirmar el commit.
+                BeanUtils.copyProperties(guardado, producto);
+                return;
+            } catch (DataIntegrityViolationException e) {
+                if (!generarAutomaticamente || intento >= MAX_INTENTOS_SKU
+                        || !esSkuDuplicado(e, candidato.getSku())) {
+                    throw e;
+                }
+            }
         }
+    }
 
-        if (producto.getSku() == null || producto.getSku().isEmpty()) {
-            producto.setSku(generarSku(producto.getDescripcion()));
+    private boolean esSkuDuplicado(DataIntegrityViolationException error, String sku) {
+        for (Throwable causa = error; causa != null; causa = causa.getCause()) {
+            if (causa instanceof SQLException sql && sql.getErrorCode() == 1062) {
+                return sku != null && productoRepo.existsBySku(sku);
+            }
         }
-
-        productoRepo.save(producto);
+        return false;
     }
 
     public Producto updateProducto(Long id, Producto producto) {

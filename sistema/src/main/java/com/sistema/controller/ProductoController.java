@@ -92,6 +92,7 @@ public class ProductoController {
                           SessionStatus status) {
 
         producto.setId(null);
+        producto.setSku(null);
 
         if (proveedorId != null) {
             Proveedor proveedor = proveedorService

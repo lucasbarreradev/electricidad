@@ -15,11 +15,13 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     );
 
     @Query("""
-SELECT COUNT(p) 
+SELECT p.sku
 FROM Producto p 
-WHERE p.sku LIKE CONCAT(:prefijo, '%')
+WHERE p.sku LIKE CONCAT(:prefijo, '-%')
 """)
-    long countBySkuPrefix(@Param("prefijo") String prefijo);
+    List<String> findSkusByPrefix(@Param("prefijo") String prefijo);
+
+    boolean existsBySku(String sku);
 
     boolean existsByProveedorId(Long proveedorId);
 }
