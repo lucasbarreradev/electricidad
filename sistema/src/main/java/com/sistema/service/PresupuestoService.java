@@ -492,6 +492,14 @@ public class PresupuestoService {
                             precioNuevo = nuevoPrecioContado;
                     }
 
+                    // El precio del presupuesto es un valor ya acordado. Si al
+                    // editar el producto esa lista de precios queda vacía, se
+                    // conserva el importe existente en lugar de reemplazarlo
+                    // por null y fallar al recalcular el subtotal.
+                    if (precioNuevo == null) {
+                        continue;
+                    }
+
                     detalle.setPrecioUnitario(precioNuevo);
                     detalle.calcularSubtotal();
 

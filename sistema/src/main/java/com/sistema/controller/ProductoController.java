@@ -7,6 +7,8 @@ import com.sistema.service.ProductoExcelService;
 import com.sistema.service.ProductoService;
 import com.sistema.service.ProveedorService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +23,8 @@ import java.util.List;
 @RequestMapping("/productos")
 @SessionAttributes("producto")
 public class ProductoController {
+    private static final Logger log = LoggerFactory.getLogger(ProductoController.class);
+
     private final ProductoService productoService;
     private final ProveedorService proveedorService;
     private final ProductoExcelService productoExcelService;
@@ -145,12 +149,21 @@ public class ProductoController {
                              @ModelAttribute Producto producto,
                              RedirectAttributes ra) {
 
+        try {
+            productoService.updateProducto(id, producto);
+            ra.addFlashAttribute("mensaje",
+                    "Producto actualizado correctamente");
+            return "redirect:/productos";
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("No se pudo actualizar el producto {}: {}", id, e.getMessage());
+            ra.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            log.error("Error al actualizar el producto {}", id, e);
+            ra.addFlashAttribute("error",
+                    "No se pudo actualizar el producto. Verificá los precios ingresados.");
+        }
 
-        productoService.updateProducto(id, producto);
-        ra.addFlashAttribute("mensaje",
-                "Producto actualizado correctamente");
-
-        return "redirect:/productos";
+        return "redirect:/productos/editar/" + id;
     }
 
     // ==========================================

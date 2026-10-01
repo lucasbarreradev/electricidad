@@ -20,6 +20,12 @@
 
             <div class="container-fluid">
 
+                <c:if test="${not empty error}">
+                    <div class="alert alert-danger mt-4">
+                        <c:out value="${error}"/>
+                    </div>
+                </c:if>
+
                 <!-- Título -->
                 <h1 class="h3 mb-4 text-gray-800 mt-4">
                     <c:choose>
