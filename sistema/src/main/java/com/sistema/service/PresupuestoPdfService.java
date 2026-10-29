@@ -294,8 +294,8 @@ public class PresupuestoPdfService {
         PdfPTable table = new PdfPTable(hayDescuentos ? 6 : 5);
         table.setWidthPercentage(100);
         table.setWidths(hayDescuentos
-                ? new int[]{42, 8, 16, 9, 11, 14}
-                : new int[]{45, 12, 18, 12, 13});
+                ? new int[]{38, 8, 15, 8, 15, 16}
+                : new int[]{40, 10, 17, 16, 17});
         table.setSplitRows(true);
         // Usar el espacio disponible antes de continuar una descripción larga en otra hoja.
         table.setSplitLate(false);
@@ -558,32 +558,27 @@ public class PresupuestoPdfService {
     }
 
 
-    private PdfPCell celdaImporte(String texto, Font fuenteBase) {
-        // Reducir progresivamente la fuente según la longitud del importe.
-        float tamanio = texto.length() > 16 ? 6.5f
-                : texto.length() > 13 ? 7f
-                : texto.length() > 10 ? 8f
-                : fuenteBase.getSize();
 
+    private PdfPCell celdaImporte(String texto, Font fuenteBase) {
         Font fuente = new Font(
                 fuenteBase.getBaseFont(),
-                tamanio,
+                fuenteBase.getSize(),
                 fuenteBase.getStyle(),
                 fuenteBase.getColor()
         );
 
         PdfPCell cell = new PdfPCell(new Phrase(texto, fuente));
-        cell.setPaddingTop(4);
-        cell.setPaddingBottom(4);
-        cell.setPaddingLeft(2);
-        cell.setPaddingRight(2);
+        cell.setPadding(2);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         cell.setBorderColor(BaseColor.LIGHT_GRAY);
-        cell.setNoWrap(true);
+
+        // Permitir que iText distribuya el contenido correctamente.
+        cell.setNoWrap(false);
 
         return cell;
     }
+
 
 
     private PdfPCell celdaNormal(String texto, Font font) {
