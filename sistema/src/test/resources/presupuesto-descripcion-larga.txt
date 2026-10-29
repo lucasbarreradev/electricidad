@@ -1,0 +1,35 @@
+TRABAJO A REALIZAR EN OBRA EDIFICIO DE COMANDO
+
+* Se realizara el montaje de cañeria exterior rigida galvanizada de tomacorriente normal de 16A/220VCA, tomacorriente trifasico normal 380VCA e iluminacion interior y exterior en sala de tableros, sala de celdas, comunicaciones, sala de baterias, baño y trincheras hasta cada tablero seccional correspondiente (cabe aclarar que la sala de comunicaciones, sala de baterias y baño esta montada la cañeria, como asi tambien en sala de tableros se encuentra montado dos circuitos de cañeria en pared direccion este-oeste y bandeja portacable en perimetro completo y en sala de celdas dos circuitos de cañeria en pared direccion norte-sur con continuacion sobre pared este-oeste unos 5mts aproximadamente y por ultimo cañeria montada de 4 bocas de iluminacion en techo de sala de celdas).
+
+* Se realizara el montaje de bandeja portacable suspendida al techo para comunicacion en sala de celdas (direccionada sobre trincheras de norte a sur) acoplandose al perimetro de sala de tableros.
+
+* Se realizara el montaje de iluminacion suspendida al techo en sala de celdas, sala de tableros (altura a nivel de piso 4m), comunicaciones, sala de baterias y baño.
+
+* Se realizara la colocacion de iluminacion exterior en perimetro de edificio de comando.
+
+* Se realizara el cableado y conexionado de cada luminaria y tomacorriente mencionado anteriormente desde los tableros seccionales de cada sector del edificio.
+
+* Se realizara el montaje de barra de CU en perimetro interno de edificio de comando para su conexion de puesta a tierra y se vincularan las aberturas del edificio con malla de cobre estañado a la barra de CU perimetral.
+
+* Se realizara el armado y montaje de tableros seccionales de cada sala con sus respectivas indicaciones de distribuciones de carga.
+
+* Se realizara el armado y montaje de tableros de bombas sumergible en trinchera.
+
+* Se realizara el montaje e intalacion de cañeria exterior rigida galvanizada de tomacorriente normal 16A/220VCA e iluminacion interior y exterior en sala de bombas.
+
+* Se realizara el montaje y cableado de iluminacion interior y exterior hasta tablero general en sala anteriormente mencionada.
+
+* Se realizara el armado y montaje de tablero de arranque de bomba en sala de bombas.
+
+* NO SE CONTEMPLA INSTALACION DE SENSORES Y ALARMAS DE RED DE INCENDIOS.
+
+* NO SE CONTEMPLA INSTALACION NI COLOCACION DE LUMINARIAS DE EMERGENCIA YA QUE QUEDA SUJETO A DEFINIR EQUIPOS CORRESPONDIENTES (SE COTIZARA AL MOMENTO QUE ESTE RESUELTO).
+
+* NO SE CONTEMPLA NINGUN TIPO DE OBRA CIVIL NI EXCAVACION.
+
+* NO SE CONTEMPLA MEDIO DE ELEVACION (DETALLE CON COTIZACION EN PRESUPUESTO N°0052).
+
+* NO SE CONTEMPLA MATERIALES ELECTRICOS.
+
+* CONDICION DE PAGO, 30% AL CONFIRMAR E INICIAR EL TRABAJO Y EL 70% RESTANTE AL FINALIZAR LA OBRA.

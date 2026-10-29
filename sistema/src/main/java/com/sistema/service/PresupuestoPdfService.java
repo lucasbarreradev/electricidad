@@ -27,11 +27,22 @@ public class PresupuestoPdfService {
 
         try {
             PdfWriter writer = PdfWriter.getInstance(document, out);
-            writer.setPageEvent(new PresupuestoFooter());
+            PdfPTable encabezado = crearHeader();
+            encabezado.setTotalWidth(document.right() - document.left());
+            encabezado.setLockedWidth(true);
+            float alturaHeader = encabezado.calculateHeights();
+            document.setMargins(36, 36, 15 + alturaHeader + 10, 80);
+            writer.setPageEvent(new PresupuestoFooter() {
+                @Override
+                public void onEndPage(PdfWriter writer, Document document) {
+                    super.onEndPage(writer, document);
+                    encabezado.writeSelectedRows(0, -1, document.left(),
+                            document.getPageSize().getTop() - 15, writer.getDirectContent());
+                }
+            });
 
             document.open();
 
-            agregarHeader(document, p);
             agregarDatosCliente(document, p);
             agregarCajaInfo(document, p);
             agregarFormaPago(document, p);
@@ -48,7 +59,7 @@ public class PresupuestoPdfService {
     // ==========================================
 // HEADER: Título + Logo + Empresa
 // ==========================================
-    private void agregarHeader(Document document, Presupuesto p) throws Exception {
+    private PdfPTable crearHeader() throws Exception {
         Font titulo = FontFactory.getFont(FontFactory.HELVETICA, 16, Font.BOLD); // ← más chico
         Font empresaFont = FontFactory.getFont(FontFactory.HELVETICA, 8, Font.NORMAL, BaseColor.GRAY); // ← más chico
 
@@ -80,15 +91,18 @@ public class PresupuestoPdfService {
             table.addCell(empty);
         }
 
-        document.add(table);
-
         // DATOS EMPRESA
         Paragraph empresa = new Paragraph(
                 "MOBEZA ELECTRICIDAD · Acceso Norte S/N · 2681 Etruria, Argentina",
                 empresaFont
         );
-        empresa.setSpacingAfter(4);
-        document.add(empresa);
+        PdfPCell datosEmpresa = new PdfPCell();
+        datosEmpresa.setColspan(2);
+        datosEmpresa.setBorder(Rectangle.NO_BORDER);
+        datosEmpresa.setPaddingTop(4);
+        datosEmpresa.addElement(empresa);
+        table.addCell(datosEmpresa);
+        return table;
     }
 
     // ==========================================
@@ -275,16 +289,27 @@ public class PresupuestoPdfService {
         Font header = FontFactory.getFont(FontFactory.HELVETICA, 9, Font.BOLD);
         Font normal = FontFactory.getFont(FontFactory.HELVETICA, 9);
 
-        PdfPTable table = new PdfPTable(5);
+        boolean hayDescuentos = p.getDetalles().stream().anyMatch(d ->
+                d.getDescuentoPct() != null && d.getDescuentoPct().signum() > 0);
+        PdfPTable table = new PdfPTable(hayDescuentos ? 6 : 5);
         table.setWidthPercentage(100);
-        table.setWidths(new int[]{45, 12, 18, 12, 13});
+        table.setWidths(hayDescuentos
+                ? new int[]{42, 8, 16, 9, 11, 14}
+                : new int[]{45, 12, 18, 12, 13});
+        table.setSplitRows(true);
+        // Usar el espacio disponible antes de continuar una descripción larga en otra hoja.
+        table.setSplitLate(false);
 
         // Headers
         table.addCell(celdaHeader("Descripción", header));
         table.addCell(celdaHeader("Cant.", header));
         table.addCell(celdaHeader("Precio Unit. (" + (p.getMoneda() == Presupuesto.Moneda.USD ? "USD" : "ARS") + ")", header));
+        if (hayDescuentos) {
+            table.addCell(celdaHeader("Desc. %", header));
+        }
         table.addCell(celdaHeader("IVA (" + (p.getMoneda() == Presupuesto.Moneda.USD ? "USD" : "ARS") + ")", header));
         table.addCell(celdaHeader("Importe (" + (p.getMoneda() == Presupuesto.Moneda.USD ? "USD" : "ARS") + ")", header));
+        table.setHeaderRows(1);
 
         boolean esConsumidorFinal = p.getCliente() == null ||
                 p.getCliente().getCondicionIva() == CondicionIva.CONSUMIDOR_FINAL;
@@ -329,6 +354,12 @@ public class PresupuestoPdfService {
                 ivaLinea = BigDecimal.ZERO;
             }
 
+            // El unitario debe mostrar el precio previo al descuento; el importe ya lo incluye.
+            if (hayDescuentos && d.getPrecioUnitario() != null) {
+                precioUnitarioNeto = esConsumidorFinal ? d.getPrecioUnitario()
+                        : d.getPrecioUnitario().divide(BigDecimal.ONE.add(ivaRate), 2, RoundingMode.HALF_UP);
+            }
+
             // ---------------- CELDAS ----------------
 
             // Descripción
@@ -344,6 +375,10 @@ public class PresupuestoPdfService {
 
             // Precio unitario (neto o final según condición IVA)
             table.addCell(celdaNormal(DF.format(convertir(precioUnitarioNeto, p)), normal));
+            if (hayDescuentos) {
+                BigDecimal descuento = d.getDescuentoPct() != null ? d.getDescuentoPct() : BigDecimal.ZERO;
+                table.addCell(celdaNormal(DF.format(descuento) + " %", normal));
+            }
 
             // IVA por línea
             table.addCell(celdaNormal(DF.format(convertir(ivaLinea, p)), normal));
@@ -353,6 +388,21 @@ public class PresupuestoPdfService {
         }
 
         document.add(table);
+        if (hayDescuentos) {
+            BigDecimal descuentoTotal = p.getDetalles().stream()
+                    .filter(d -> d.getDescuentoPct() != null && d.getDescuentoPct().signum() > 0
+                            && d.getPrecioUnitario() != null)
+                    .map(d -> d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad()))
+                            .subtract(d.getSubtotal()))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            Paragraph detalleDescuento = new Paragraph(
+                    "Precios unitarios antes del descuento. Importes con descuento aplicado.\n"
+                            + "Descuento total incluido (con IVA): " + simbolo(p)
+                            + DF.format(convertir(descuentoTotal, p)),
+                    FontFactory.getFont(FontFactory.HELVETICA, 8));
+            detalleDescuento.setSpacingBefore(6);
+            document.add(detalleDescuento);
+        }
     }
 
 

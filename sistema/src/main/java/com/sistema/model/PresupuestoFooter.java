@@ -18,8 +18,9 @@ public class PresupuestoFooter extends PdfPageEventHelper {
 
         // Línea horizontal
         cb.setLineWidth(0.5f);
-        cb.moveTo(document.left(), y + 20);
-        cb.lineTo(document.right(), y + 20);
+        // Mantener el separador dentro del margen, fuera de las filas que continúan en otra hoja.
+        cb.moveTo(document.left(), y + 10);
+        cb.lineTo(document.right(), y + 10);
         cb.stroke();
 
         // Tabla para layout horizontal

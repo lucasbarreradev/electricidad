@@ -17,10 +17,9 @@ public class RemitoImpresionService {
 
     public void generarRemitoPdf(Remito remito, OutputStream out) throws DocumentException {
 
-        // Tamaño A4 horizontal para que sea más ancho
+        // A4 vertical; el margen superior reserva espacio para el encabezado de cada hoja.
         Document document = new Document(PageSize.A4);
-        PdfWriter.getInstance(document, out);
-        document.open();
+        PdfWriter writer = PdfWriter.getInstance(document, out);
 
         // Fuentes
         Font fontTitle = new Font(Font.HELVETICA, 14, Font.BOLD);
@@ -122,8 +121,20 @@ public class RemitoImpresionService {
 
         headerTable.addCell(rightCell);
 
-        document.add(headerTable);
-        document.add(new Paragraph(" ", fontTiny));
+        headerTable.setTotalWidth(document.right() - document.left());
+        headerTable.setLockedWidth(true);
+        float margenSuperior = document.topMargin();
+        float alturaHeader = headerTable.getTotalHeight();
+        document.setMargins(document.leftMargin(), document.rightMargin(),
+                margenSuperior + alturaHeader + 10, document.bottomMargin());
+        writer.setPageEvent(new PdfPageEventHelper() {
+            @Override
+            public void onEndPage(PdfWriter writer, Document document) {
+                headerTable.writeSelectedRows(0, -1, document.left(),
+                        document.getPageSize().getTop() - margenSuperior, writer.getDirectContent());
+            }
+        });
+        document.open();
 
         // ==========================================
         // DATOS DEL CLIENTE Y FECHA
@@ -272,6 +283,7 @@ public class RemitoImpresionService {
         descripcionHeader.setPadding(5);
         descripcionHeader.setBackgroundColor(new Color(220, 220, 220));
         itemsTable.addCell(descripcionHeader);
+        itemsTable.setHeaderRows(1);
 
         // Items del remito
         for (RemitoItem item : remito.getItems()) {
@@ -293,29 +305,9 @@ public class RemitoImpresionService {
             itemsTable.addCell(descCell);
         }
 
-        // Líneas vacías para completar el remito (mínimo 10 líneas)
-        int lineasVacias = Math.max(0, 10 - remito.getItems().size());
-        for (int i = 0; i < lineasVacias; i++) {
-            PdfPCell emptyCell1 = new PdfPCell(new Phrase(" ", font));
-            emptyCell1.setBorder(Rectangle.BOX);
-            emptyCell1.setPadding(5);
-            emptyCell1.setMinimumHeight(25);
-            itemsTable.addCell(emptyCell1);
-
-            PdfPCell emptyCell2 = new PdfPCell(new Phrase(" ", font));
-            emptyCell2.setBorder(Rectangle.BOX);
-            emptyCell2.setPadding(5);
-            emptyCell2.setMinimumHeight(25);
-            itemsTable.addCell(emptyCell2);
-        }
-
-        document.add(itemsTable);
-
         // ==========================================
         // OBSERVACIONES
         // ==========================================
-        document.add(new Paragraph(" ", fontSmall));
-
         PdfPTable obsTable = new PdfPTable(1);
         obsTable.setWidthPercentage(100);
 
@@ -328,22 +320,18 @@ public class RemitoImpresionService {
         obsCell.setMinimumHeight(40);
         obsTable.addCell(obsCell);
 
-        document.add(obsTable);
-
         // ==========================================
         // FIRMAS
         // ==========================================
-        document.add(new Paragraph(" ", font));
-
         PdfPTable firmasTable = new PdfPTable(2);
         firmasTable.setWidthPercentage(100);
         firmasTable.setWidths(new float[]{1f, 1f});
-        firmasTable.setSpacingBefore(20);
 
         // Firma izquierda
         PdfPCell firmaIzq = new PdfPCell();
         firmaIzq.setBorder(Rectangle.NO_BORDER);
         firmaIzq.setMinimumHeight(60);
+        firmaIzq.setPaddingTop(16);
         Paragraph pIzq = new Paragraph("_________", font);
         pIzq.setAlignment(Element.ALIGN_CENTER);
         firmaIzq.addElement(pIzq);
@@ -356,6 +344,7 @@ public class RemitoImpresionService {
         PdfPCell firmaDer = new PdfPCell();
         firmaDer.setBorder(Rectangle.NO_BORDER);
         firmaDer.setMinimumHeight(60);
+        firmaDer.setPaddingTop(16);
         Paragraph pDer = new Paragraph("_________", font);
         pDer.setAlignment(Element.ALIGN_CENTER);
         firmaDer.addElement(pDer);
@@ -364,7 +353,56 @@ public class RemitoImpresionService {
         firmaDer.addElement(labelDer);
         firmasTable.addCell(firmaDer);
 
-        document.add(firmasTable);
+        // Agrupar el cierre para no separar observaciones y firmas por espacios de relleno.
+        PdfPTable cierre = new PdfPTable(1);
+        cierre.setWidthPercentage(100);
+        cierre.setKeepTogether(true);
+        PdfPCell observacionesCell = new PdfPCell(obsTable);
+        observacionesCell.setBorder(Rectangle.NO_BORDER);
+        observacionesCell.setPaddingTop(6);
+        cierre.addCell(observacionesCell);
+        PdfPCell firmasCell = new PdfPCell(firmasTable);
+        firmasCell.setBorder(Rectangle.NO_BORDER);
+        cierre.addCell(firmasCell);
+
+        float ancho = document.right() - document.left();
+        itemsTable.setTotalWidth(ancho);
+        cierre.setTotalWidth(ancho);
+        if (!remito.getItems().isEmpty()) {
+            int ultimaFila = itemsTable.size() - 1;
+            float altoUltimoItem = itemsTable.getRowHeight(ultimaFila);
+            float altoCierre = cierre.getTotalHeight();
+            float espacioPrimeraHoja = writer.getVerticalPosition(true) - document.bottom()
+                    - itemsTable.getHeaderHeight() - itemsTable.spacingBefore();
+            // Los ítems cortos acompañan al cierre si éste debe pasar de hoja.
+            // Una descripción extensa conserva su flujo para no dejar media página vacía.
+            boolean agruparUltimoItem = altoUltimoItem <= 50
+                    || (itemsTable.getTotalHeight() - itemsTable.getHeaderHeight() + altoCierre
+                    <= espacioPrimeraHoja);
+            if (agruparUltimoItem && altoUltimoItem + altoCierre
+                    <= document.top() - document.bottom() - itemsTable.getHeaderHeight()) {
+                PdfPTable ultimoItemYCierre = new PdfPTable(2);
+                ultimoItemYCierre.setWidths(new float[]{1f, 7f});
+                for (PdfPCell cell : itemsTable.getRow(ultimaFila).getCells()) {
+                    ultimoItemYCierre.addCell(new PdfPCell(cell));
+                }
+                PdfPCell cierreCell = new PdfPCell(cierre);
+                cierreCell.setColspan(2);
+                cierreCell.setBorder(Rectangle.NO_BORDER);
+                ultimoItemYCierre.addCell(cierreCell);
+                itemsTable.deleteLastRow();
+                PdfPCell bloqueFinal = new PdfPCell(ultimoItemYCierre);
+                bloqueFinal.setColspan(2);
+                bloqueFinal.setBorder(Rectangle.NO_BORDER);
+                itemsTable.addCell(bloqueFinal);
+                document.add(itemsTable);
+            } else {
+                document.add(itemsTable);
+                document.add(cierre);
+            }
+        } else {
+            document.add(cierre);
+        }
 
         document.close();
     }
