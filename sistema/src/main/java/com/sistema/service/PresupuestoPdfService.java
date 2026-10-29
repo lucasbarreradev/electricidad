@@ -541,7 +541,7 @@ public class PresupuestoPdfService {
         cell.setPadding(padding);
         cell.setNoWrap(true);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setVerticalAlignment(Element.ALIGN_TOP);
         cell.setBorderColor(BaseColor.LIGHT_GRAY);
         return cell;
     }
