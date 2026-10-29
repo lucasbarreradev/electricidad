@@ -380,11 +380,15 @@ public class PresupuestoPdfService {
                 table.addCell(celdaNormal(DF.format(descuento) + " %", normal));
             }
 
+
             // IVA por línea
-            table.addCell(celdaNormal(DF.format(convertir(ivaLinea, p)), normal));
+            table.addCell(celdaImporte(
+                    DF.format(convertir(ivaLinea, p)), normal));
 
             // Importe total (subtotal con IVA y descuento)
-            table.addCell(celdaNormal(DF.format(convertir(subtotalConIva, p)), normal));
+            table.addCell(celdaImporte(
+                    DF.format(convertir(subtotalConIva, p)), normal));
+
         }
 
         document.add(table);
@@ -552,6 +556,35 @@ public class PresupuestoPdfService {
         cell.setBorderColor(BaseColor.GRAY);
         return cell;
     }
+
+
+    private PdfPCell celdaImporte(String texto, Font fuenteBase) {
+        // Reducir progresivamente la fuente según la longitud del importe.
+        float tamanio = texto.length() > 16 ? 6.5f
+                : texto.length() > 13 ? 7f
+                : texto.length() > 10 ? 8f
+                : fuenteBase.getSize();
+
+        Font fuente = new Font(
+                fuenteBase.getBaseFont(),
+                tamanio,
+                fuenteBase.getStyle(),
+                fuenteBase.getColor()
+        );
+
+        PdfPCell cell = new PdfPCell(new Phrase(texto, fuente));
+        cell.setPaddingTop(4);
+        cell.setPaddingBottom(4);
+        cell.setPaddingLeft(2);
+        cell.setPaddingRight(2);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setBorderColor(BaseColor.LIGHT_GRAY);
+        cell.setNoWrap(true);
+
+        return cell;
+    }
+
 
     private PdfPCell celdaNormal(String texto, Font font) {
         PdfPCell cell = new PdfPCell(new Phrase(texto, font));
